@@ -1586,9 +1586,12 @@ class GameEngine {
       this.isSitting = false;
       this.playerPos.set(0, 0, 0.6); // 站起時邁步到沙發前開闊地毯處
       this.player.position.copy(this.playerPos);
+      this.player.position.y = 0;
       this.player.rotation.y = Math.PI; // 面對電視方向
       if (this.playerNodes.legL) this.playerNodes.legL.rotation.x = 0;
       if (this.playerNodes.legR) this.playerNodes.legR.rotation.x = 0;
+      if (this.playerNodes.armL) this.playerNodes.armL.rotation.x = 0;
+      if (this.playerNodes.armR) this.playerNodes.armR.rotation.x = 0;
       if (this.playerNodes.torso) this.playerNodes.torso.position.y = 0;
       this.updateSitBtnUI(false);
       if (window.soundSystem) window.soundSystem.playClick();
@@ -1597,12 +1600,15 @@ class GameEngine {
       this.isSitting = true;
       this.playerPos.set(0, 0, 1.35); // 坐於正南側沙發座墊上
       this.player.position.copy(this.playerPos);
+      this.player.position.y = -0.22; // 全身整體就座，頭頸、軀幹與四肢緊密相連絕不分開
       this.player.rotation.y = Math.PI; // 面向北方電視機！
 
-      // 腿部向前水平延伸坐在座墊上，身體不穿透沙發靠背與底座
+      // 雙腿前伸坐於座墊，手臂自然放鬆置於腿上
       if (this.playerNodes.legL) this.playerNodes.legL.rotation.x = -Math.PI / 2;
       if (this.playerNodes.legR) this.playerNodes.legR.rotation.x = -Math.PI / 2;
-      if (this.playerNodes.torso) this.playerNodes.torso.position.y = -0.32;
+      if (this.playerNodes.armL) this.playerNodes.armL.rotation.x = -0.45;
+      if (this.playerNodes.armR) this.playerNodes.armR.rotation.x = -0.45;
+      if (this.playerNodes.torso) this.playerNodes.torso.position.y = 0; // 軀幹絕不單獨偏移
       this.updateSitBtnUI(true);
       if (window.soundSystem) window.soundSystem.playClick();
       this.showPrompt('🛋️ 小主人舒服地坐在沙發上，欣賞水族館電視！');
@@ -1963,7 +1969,10 @@ class GameEngine {
         name: '摸摸白肚子',
         icon: '🐱',
         pos: new THREE.Vector3(0.7, 0.7, 1.35),
-        action: () => window.curriculumSystem.startBellyRubInteraction()
+        action: () => {
+          this.makeCatHappy();
+          if (window.soundSystem) window.soundSystem.playMeow('sweet');
+        }
       },
       {
         id: 'cattree',
@@ -1992,45 +2001,67 @@ class GameEngine {
         icon: '🐭',
         pos: new THREE.Vector3(1.8, 0.25, 0.6),
         action: () => this.interactToyMouse()
-      },
-      {
-        id: 'rug',
-        name: '詞語探索篇 (5題)',
-        icon: '📖',
-        pos: new THREE.Vector3(0, 0.3, -0.6),
-        action: () => window.curriculumSystem.openQuizHub('word')
-      },
-      {
-        id: 'table',
-        name: '成語狀況篇 (5題)',
-        icon: '💬',
-        pos: new THREE.Vector3(0, 0.6, -0.6),
-        action: () => window.curriculumSystem.openQuizHub('idiom')
-      },
-      {
-        id: 'bathroom',
-        name: '分號軌道篇 (4題)',
-        icon: '🚪',
-        pos: new THREE.Vector3(-4.2, 1.2, -2.2),
-        action: () => window.curriculumSystem.openQuizHub('semi')
-      },
-      {
-        id: 'window',
-        name: '生字部首篇 (6題)',
-        icon: '🌟',
-        pos: new THREE.Vector3(3.8, 1.3, -3.6),
-        action: () => window.curriculumSystem.openQuizHub('hanzi')
       }
     ];
 
     const uiContainer = document.getElementById('ui-overlay');
-    this.spotElements = this.interactiveSpots.map(spot => {
+    this.glowingAuras = [];
+
+    // 建立 3D 物品發光提示系統 (地面脈動微光環 + 漂浮金芒水晶)
+    this.spotElements = this.interactiveSpots.map((spot, idx) => {
+      // 1. 3D 物品發光光環
+      const auraGroup = new THREE.Group();
+      auraGroup.position.copy(spot.pos);
+
+      // 地面脈動光環 (Pulsing Glow Ring)
+      const ringGeo = new THREE.RingGeometry(0.24, 0.38, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.02 - spot.pos.y; // 保持在地面高度
+      auraGroup.add(ringMesh);
+
+      // 漂浮微光晶體 (Floating Shimmer Crystal)
+      const crystalGeo = new THREE.OctahedronGeometry(0.10, 0);
+      const crystalMat = new THREE.MeshStandardMaterial({
+        color: 0xfef08a,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.85,
+        roughness: 0.2,
+        metalness: 0.3,
+        transparent: true,
+        opacity: 0.85
+      });
+      const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
+      crystalMesh.position.y = 0.25;
+      auraGroup.add(crystalMesh);
+
+      this.scene.add(auraGroup);
+      this.glowingAuras.push({
+        group: auraGroup,
+        ring: ringMesh,
+        crystal: crystalMesh,
+        baseY: 0.25,
+        phase: idx * 1.2
+      });
+
+      // 2. 2D 互動提示標籤 (平時隱藏，近距離靠近才淡入提示)
       const bubble = document.createElement('div');
       bubble.className = 'interact-bubble';
       bubble.innerHTML = `<span>${spot.icon}</span> <span>${spot.name}</span>`;
-      bubble.addEventListener('click', () => spot.action());
+      bubble.addEventListener('click', (e) => {
+        e.stopPropagation();
+        spot.action();
+      });
       uiContainer.appendChild(bubble);
-      return { spot, bubble };
+
+      return { spot, bubble, aura: auraGroup };
     });
   }
 
@@ -2159,15 +2190,6 @@ class GameEngine {
       const isCatOnSofa = this.catPos.y >= 0.52;
       const resolved = this.resolveCollision(nextPos, 0.22, false, isCatOnSofa);
 
-      // 活動邊界防護 (Toast)
-      if (Math.abs(resolved.x) > 6.4 || Math.abs(resolved.z) > 6.4) {
-        const toast = document.getElementById('boundary-toast');
-        if (toast) {
-          toast.classList.remove('hidden');
-          setTimeout(() => toast.classList.add('hidden'), 2000);
-        }
-      }
-
       this.catPos.x = resolved.x;
       this.catPos.z = resolved.z;
       if (this.cat) {
@@ -2229,6 +2251,10 @@ class GameEngine {
       if (dirToCat.lengthSq() > 0.01) {
         this.player.rotation.y = Math.atan2(dirToCat.x, dirToCat.z);
       }
+      this.player.position.y = 0;
+    } else {
+      this.player.position.y = -0.22;
+      if (this.playerNodes.torso) this.playerNodes.torso.position.y = 0;
     }
 
     const breathe = Math.sin(time * 2.5) * 0.015;
@@ -2478,7 +2504,7 @@ class GameEngine {
     if (this.playerShadow) {
       this.playerShadow.position.x = this.playerPos.x;
       this.playerShadow.position.z = this.playerPos.z;
-      this.playerShadow.position.y = this.player.position.y + 0.003;
+      this.playerShadow.position.y = Math.max(0.003, this.player.position.y + 0.003);
       this.playerShadow.material.opacity = this.isSitting ? 0.08 : 0.22;
     }
     if (this.catShadow) {
@@ -2494,47 +2520,70 @@ class GameEngine {
     let closestDist = Infinity;
     let closestSpot = null;
 
-    const currentHeroPos = this.viewMode === 'cat' ? this.cat.position : this.playerPos;
+    const currentHeroPos = (this.viewMode === 'cat' && this.cat) ? this.cat.position : this.playerPos;
+    const time = this.clock ? this.clock.getElapsedTime() : performance.now() * 0.001;
 
-    this.spotElements.forEach(({ spot, bubble }) => {
-      // 標記向上適度偏移，保證絕不遮擋角色臉孔或關鍵肢體
-      tempV.copy(spot.pos);
-      tempV.y += 0.35;
-      tempV.project(this.camera);
-
-      if (tempV.z < 1) {
-        const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-tempV.y * 0.5 + 0.5) * window.innerHeight;
-
-        // 若標記超出視窗可視高度，完全隱藏以防觸發捲動高度膨脹
-        if (x < -20 || x > window.innerWidth + 20 || y < -20 || y > window.innerHeight - 30) {
-          bubble.style.display = 'none';
-          bubble.style.opacity = '0';
-        } else {
-          bubble.style.display = 'flex';
-          bubble.style.left = `${x}px`;
-          bubble.style.top = `${y}px`;
-        }
-
+    // 1. 動態更新 3D 發光光環與微光晶體 (旋轉、脈動與漂浮)
+    if (this.glowingAuras) {
+      this.glowingAuras.forEach((aura, i) => {
+        const spot = this.interactiveSpots[i];
+        if (!spot) return;
         const dist = currentHeroPos.distanceTo(spot.pos);
-        if (dist < 2.5) {
-          bubble.style.opacity = '1';
-          bubble.style.transform = 'translate(-50%, -100%) scale(1.05)';
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestSpot = spot;
-          }
-        } else {
-          bubble.style.opacity = '0.7';
-          bubble.style.transform = 'translate(-50%, -100%) scale(0.9)';
-        }
-      } else {
-        bubble.style.display = 'none';
-        bubble.style.opacity = '0';
+        const isNear = dist < 1.35;
+
+        // 旋轉晶體
+        aura.crystal.rotation.y = time * 2.2 + aura.phase;
+        aura.crystal.rotation.x = Math.sin(time * 1.5 + aura.phase) * 0.2;
+        aura.crystal.position.y = aura.baseY + Math.sin(time * 3.5 + aura.phase) * 0.06;
+
+        // 靠近時光環放大且脈動加劇
+        const ringScale = isNear 
+          ? 1.25 + Math.sin(time * 5 + aura.phase) * 0.15 
+          : 1.0 + Math.sin(time * 2.5 + aura.phase) * 0.1;
+        aura.ring.scale.set(ringScale, ringScale, 1);
+        aura.ring.material.opacity = isNear ? 0.9 : 0.6;
+        aura.crystal.material.emissiveIntensity = isNear ? 1.6 : 0.85;
+      });
+    }
+
+    // 2. 找出最接近且在觸碰範圍內的物品 (dist < 1.35m)
+    this.spotElements.forEach(({ spot }) => {
+      const dist = currentHeroPos.distanceTo(spot.pos);
+      if (dist < 1.35 && dist < closestDist) {
+        closestDist = dist;
+        closestSpot = spot;
       }
     });
 
     this.nearbySpot = closestSpot;
+
+    // 3. 更新 2D 氣泡提示：僅當玩家靠近物品 (< 1.35m) 且為當前焦點時才單獨顯示，其餘全數隱藏保持畫面乾淨！
+    this.spotElements.forEach(({ spot, bubble }) => {
+      if (closestSpot && spot.id === closestSpot.id && closestDist < 1.35) {
+        tempV.copy(spot.pos);
+        tempV.y += 0.45;
+        tempV.project(this.camera);
+
+        if (tempV.z < 1) {
+          const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-tempV.y * 0.5 + 0.5) * window.innerHeight;
+
+          if (x >= 20 && x <= window.innerWidth - 20 && y >= 20 && y <= window.innerHeight - 30) {
+            bubble.style.display = 'flex';
+            bubble.style.left = `${x}px`;
+            bubble.style.top = `${y}px`;
+            bubble.classList.add('active');
+            bubble.style.opacity = '1';
+            return;
+          }
+        }
+      }
+
+      // 未靠近或在螢幕外：完全隱藏
+      bubble.style.display = 'none';
+      bubble.style.opacity = '0';
+      bubble.classList.remove('active');
+    });
   }
 
   updateProximityCard() {

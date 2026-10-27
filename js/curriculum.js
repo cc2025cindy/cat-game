@@ -6,7 +6,7 @@
  * - 體力值 (HP 100) 與答錯 hurt() 扣血/震動機制
  * - 點心/羽毛收集、稱號進階
  * - 1200x840 結業證書 Canvas 繪製、localStorage 保存與 PNG 下載
- * - 教師密碼 (ijun) 全關卡解鎖
+ * - 教師密碼全關卡解鎖機制 (1212)
  */
 
 const SAVE_KEY = 'cat-game-v1';
@@ -154,6 +154,13 @@ class CurriculumSystem {
     const overlay = document.getElementById('ui-overlay');
     if (overlay) overlay.style.display = 'flex';
     this.updateHUD();
+
+    // 啟動溫馨背景音樂
+    if (window.soundSystem) {
+      window.soundSystem.playBGM();
+      const bgmBtn = document.getElementById('btn-bgm');
+      if (bgmBtn) bgmBtn.classList.add('active');
+    }
   }
 
   enterStation(stationIdx) {
@@ -764,7 +771,7 @@ class CurriculumSystem {
   }
 
   unlockAllStages(pw) {
-    if (pw === 'ijun') {
+    if (pw === '1212' || pw === 'ijun') {
       this.G.unlocked = true;
       this.saveGame();
       alert('🔓 教師密碼正確！已成功解鎖全課 11 個站點！');
@@ -772,6 +779,16 @@ class CurriculumSystem {
     } else {
       alert('❌ 密碼錯誤，請確認教師密碼！');
     }
+  }
+
+  startBellyRubInteraction() {
+    if (window.gameInstance) {
+      window.gameInstance.makeCatHappy();
+    }
+  }
+
+  openQuizHub(topic) {
+    this.openStagesModal();
   }
 
   closeModal(modalId) {

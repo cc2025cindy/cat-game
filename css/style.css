@@ -306,29 +306,43 @@ rt {
   backdrop-filter: blur(6px);
 }
 
-/* 3D 場景內互動標記 (Floating 3D Marker) */
+/* 3D 場景內互動標記 (近距離靠近發光物體才淡入顯示提示) */
 .interact-bubble {
   position: absolute;
   transform: translate(-50%, -100%);
-  background: var(--card-bg);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
   padding: 8px 16px;
   border-radius: 20px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-  display: flex;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35), 0 2px 6px rgba(0,0,0,0.1);
+  display: none;
+  opacity: 0;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
-  color: var(--text-dark);
-  border: 2px solid var(--primary-orange);
+  color: #78350f;
+  border: 2px solid #f59e0b;
   cursor: pointer;
-  pointer-events: auto;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
   z-index: 15;
+  white-space: nowrap;
+}
+.interact-bubble.active {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  animation: popBubble 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popBubble {
+  0% { transform: translate(-50%, -85%) scale(0.85); opacity: 0; }
+  100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
 }
 .interact-bubble:hover {
-  transform: translate(-50%, -110%) scale(1.08);
+  transform: translate(-50%, -108%) scale(1.05);
   background: #ffffff;
+  box-shadow: 0 10px 28px rgba(245, 158, 11, 0.5);
 }
 .interact-bubble::after {
   content: '';
@@ -338,7 +352,7 @@ rt {
   transform: translateX(-50%);
   border-width: 8px 7px 0 7px;
   border-style: solid;
-  border-color: var(--primary-orange) transparent transparent transparent;
+  border-color: #f59e0b transparent transparent transparent;
 }
 
 /* 模態視窗（遊戲關卡彈出卡片） */
@@ -1383,22 +1397,19 @@ rt {
   color: #b91c1c;
 }
 
-/* 邊界警告 Toast */
-.boundary-toast {
-  position: fixed;
-  bottom: 120px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(185, 28, 28, 0.9);
-  color: white;
-  padding: 8px 18px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-  z-index: 150;
-  pointer-events: none;
-  transition: opacity 0.3s;
+/* 邊界警告 Toast (完全永久停用，防護交由物理邊界無形攔阻，保持畫面乾淨) */
+.boundary-toast, #boundary-toast {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* 全域通用隱藏類別 */
+.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* 結業證書彈窗 */

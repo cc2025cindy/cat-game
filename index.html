@@ -38,7 +38,7 @@
         <button id="tStages" class="btn-secondary" onclick="curriculumSystem.openStagesModal()">📖 關卡與章節一覽</button>
       </div>
       <div class="title-teacher-row">
-        <input id="teacherPw" type="password" placeholder="輸入教師密碼 (ijun) 解鎖全部關卡">
+        <input id="teacherPw" type="password" placeholder="請輸入教師密碼">
         <button class="btn-teacher" onclick="curriculumSystem.unlockAllStages(document.getElementById('teacherPw').value)">解鎖</button>
       </div>
     </div>
@@ -138,8 +138,8 @@
       <span id="prompt-text">聆聽門外的喵喵叫</span>
     </div>
 
-    <!-- 活動邊界 Toast -->
-    <div id="boundary-toast" class="boundary-toast hidden">⚠️ 已到達小女生的活動邊界囉！</div>
+    <!-- 活動邊界 Toast (已停用並永久隱藏，保持視線清爽) -->
+    <div id="boundary-toast" class="boundary-toast hidden" style="display:none !important;">⚠️ 已到達小女生的活動邊界囉！</div>
 
     <!-- 主人說話語音氣泡字幕 -->
     <div class="voice-bubble-container hidden" id="owner-voice-bubble">
@@ -277,7 +277,7 @@
       </div>
       <div id="stages-list" style="max-height: 55vh; overflow-y: auto; margin: 12px 0;"></div>
       <div class="modal-footer" style="display:flex; gap:8px;">
-        <input id="stagesTeacherPw" type="password" placeholder="輸入教師密碼 (ijun) 解鎖全部關卡" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
+        <input id="stagesTeacherPw" type="password" placeholder="請輸入教師密碼" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
         <button class="btn-confirm" onclick="curriculumSystem.unlockAllStages(document.getElementById('stagesTeacherPw').value)">密碼解鎖</button>
       </div>
     </div>

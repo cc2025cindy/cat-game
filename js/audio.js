@@ -107,6 +107,9 @@ class SoundSystem {
     if (this.masterGain) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.85, this.ctx.currentTime);
     }
+    if (this.bgmAudio) {
+      this.bgmAudio.muted = this.isMuted;
+    }
     if (window.voiceSystem) {
       window.voiceSystem.isMuted = this.isMuted;
     }
@@ -418,64 +421,54 @@ class SoundSystem {
   }
 
   /**
-   * 溫馨 Lo-Fi 背景音樂合成器 (Cmaj7 - Am7 - Dm7 - G7 循環和弦)
+   * 溫馨真實背景音樂播放器 (audio/bgm.mp3 循環播放)
    */
-  toggleBGM() {
+  initBGM() {
+    if (!this.bgmAudio) {
+      this.bgmAudio = new Audio('audio/bgm.mp3');
+      this.bgmAudio.loop = true;
+      this.bgmAudio.volume = 0.38;
+      this.bgmAudio.preload = 'auto';
+    }
+  }
+
+  playBGM() {
     this.init();
     this.resume();
-    this.bgmPlaying = !this.bgmPlaying;
-
-    if (this.bgmPlaying) {
-      this.startBGMProgression();
-    } else {
-      if (this.bgmTimer) clearInterval(this.bgmTimer);
+    this.initBGM();
+    this.bgmPlaying = true;
+    if (this.bgmAudio) {
+      this.bgmAudio.muted = this.isMuted;
+      this.bgmAudio.play().catch(e => {
+        // 使用者尚未與頁面互動時暫緩
+      });
     }
-    return this.bgmPlaying;
+    return true;
+  }
+
+  stopBGM() {
+    this.bgmPlaying = false;
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
+    }
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+    return false;
+  }
+
+  toggleBGM() {
+    if (this.bgmPlaying) {
+      return this.stopBGM();
+    } else {
+      return this.playBGM();
+    }
   }
 
   startBGMProgression() {
-    // 溫暖和弦進行：Cmaj7 -> Am7 -> Dm7 -> G7
-    const chords = [
-      [261.63, 329.63, 392.00, 493.88], // C, E, G, B (Cmaj7)
-      [220.00, 261.63, 329.63, 392.00], // A, C, E, G (Am7)
-      [293.66, 349.23, 440.00, 523.25], // D, F, A, C (Dm7)
-      [196.00, 246.94, 293.66, 349.23], // G, B, D, F (G7)
-    ];
-
-    let chordIdx = 0;
-    const playChord = () => {
-      if (!this.bgmPlaying || this.isMuted) return;
-      const now = this.ctx.currentTime;
-      const currentNotes = chords[chordIdx];
-
-      currentNotes.forEach((freq, i) => {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        const filter = this.ctx.createBiquadFilter();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + i * 0.05);
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(800, now);
-
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(0.05, now + 0.2 + i * 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.bgmGain);
-
-        osc.start(now + i * 0.05);
-        osc.stop(now + 2.3);
-      });
-
-      chordIdx = (chordIdx + 1) % chords.length;
-    };
-
-    playChord();
-    this.bgmTimer = setInterval(playChord, 2400);
+    // 備援合成器 (當音檔載入異常時啟用)
+    this.playBGM();
   }
 }
 
