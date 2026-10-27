@@ -1,0 +1,272 @@
+[
+  {
+    "id": "cat10_kitten_01",
+    "file": "audio/meows/cat10_kitten_01.mp3",
+    "category": "sweet",
+    "label": "小奶貓初啼",
+    "desc": "幼貓剛睡醒稚嫩清脆的短喵",
+    "duration": 0.9,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_kitten_02",
+    "file": "audio/meows/cat10_kitten_02.mp3",
+    "category": "sweet",
+    "label": "幼貓撒嬌點頭",
+    "desc": "高音萌感小奶貓撒嬌",
+    "duration": 1.3,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_kitten_03",
+    "file": "audio/meows/cat10_kitten_03.mp3",
+    "category": "sweet",
+    "label": "黏人小奶貓",
+    "desc": "輕柔綿密的討抱抱叫聲",
+    "duration": 1.05,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_kitten_04",
+    "file": "audio/meows/cat10_kitten_04.mp3",
+    "category": "sweet",
+    "label": "奶萌輕喚",
+    "desc": "好奇探頭時的小聲輕喵",
+    "duration": 0.9,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_kitten_05",
+    "file": "audio/meows/cat10_kitten_05.mp3",
+    "category": "sweet",
+    "label": "小女生尋找主人",
+    "desc": "小步跑向主人時的連續輕快短鳴",
+    "duration": 0.85,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_cry_01",
+    "file": "audio/meows/cat10_cry_01.mp3",
+    "category": "calling",
+    "label": "委屈討抱長音",
+    "desc": "尾音上揚的甜美渴望叫聲",
+    "duration": 1.45,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_cry_02",
+    "file": "audio/meows/cat10_cry_02.mp3",
+    "category": "calling",
+    "label": "黏人找主人",
+    "desc": "充滿依賴感的情感呼喚",
+    "duration": 1.8,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_cry_03",
+    "file": "audio/meows/cat10_cry_03.mp3",
+    "category": "calling",
+    "label": "大聲尋求陪伴",
+    "desc": "悠長婉轉的撒嬌哀鳴",
+    "duration": 3.05,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_cry_04",
+    "file": "audio/meows/cat10_cry_04.mp3",
+    "category": "calling",
+    "label": "門外深情呼喚",
+    "desc": "深切渴望靠近主人的聲音",
+    "duration": 2.3,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_hungry_01",
+    "file": "audio/meows/cat10_hungry_01.mp3",
+    "category": "hungry",
+    "label": "急促討小魚乾",
+    "desc": "聞到魚乾香味時迫不及待的催促叫聲",
+    "duration": 1.9,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_hungry_02",
+    "file": "audio/meows/cat10_hungry_02.mp3",
+    "category": "hungry",
+    "label": "大口要點心",
+    "desc": "節奏分明、清脆有力的討吃聲",
+    "duration": 2.8,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_hungry_03",
+    "file": "audio/meows/cat10_hungry_03.mp3",
+    "category": "hungry",
+    "label": "肚子咕嚕嚕催飯",
+    "desc": "尾音加重的飢餓抗議",
+    "duration": 1.9,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_hungry_04",
+    "file": "audio/meows/cat10_hungry_04.mp3",
+    "category": "hungry",
+    "label": "碗空了提醒主人",
+    "desc": "直盯著空碗發出的提醒喵聲",
+    "duration": 1.65,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_loud_01",
+    "file": "audio/meows/cat10_loud_01.mp3",
+    "category": "alert",
+    "label": "沉穩霸氣公貓鳴",
+    "desc": "共鳴極深、穿透力十足的嘹亮長鳴",
+    "duration": 2.7,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_loud_02",
+    "file": "audio/meows/cat10_loud_02.mp3",
+    "category": "alert",
+    "label": "雄厚宣告主權",
+    "desc": "低沉厚重的大貓威嚴喵叫",
+    "duration": 3.6,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_loud_03",
+    "file": "audio/meows/cat10_loud_03.mp3",
+    "category": "alert",
+    "label": "高聲巡視領地",
+    "desc": "在客廳最高處發出的宣告長嘯",
+    "duration": 2.7,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_chatter_01",
+    "file": "audio/meows/cat10_chatter_01.mp3",
+    "category": "playful",
+    "label": "窗外小鳥牙齒打顫",
+    "desc": "看到窗外飛動目標時牙齒快速雀躍碎鳴",
+    "duration": 0.85,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_chatter_02",
+    "file": "audio/meows/cat10_chatter_02.mp3",
+    "category": "playful",
+    "label": "興奮鳥鳴碎叫",
+    "desc": "極度激動時喉嚨發出的顫音 (Chatter)",
+    "duration": 0.85,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_chatter_03",
+    "file": "audio/meows/cat10_chatter_03.mp3",
+    "category": "playful",
+    "label": "鎖定羽毛蓄勢待發",
+    "desc": "緊盯逗貓棒羽毛時的短促連鎖顫叫",
+    "duration": 0.7,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_chatter_04",
+    "file": "audio/meows/cat10_chatter_04.mp3",
+    "category": "playful",
+    "label": "撲爪前的碎鳴",
+    "desc": "撲向毛線球時興奮的咔噠聲",
+    "duration": 1.25,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_opera_01",
+    "file": "audio/meows/cat10_opera_01.mp3",
+    "category": "growl",
+    "label": "戲劇化波浪歌唱",
+    "desc": "起伏如歌劇般浮誇的戲劇性長音",
+    "duration": 3.1,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_opera_02",
+    "file": "audio/meows/cat10_opera_02.mp3",
+    "category": "growl",
+    "label": "深情高低音轉折",
+    "desc": "從高音滑向低音的幽默抱怨叫聲",
+    "duration": 3.0,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_opera_03",
+    "file": "audio/meows/cat10_opera_03.mp3",
+    "category": "growl",
+    "label": "不服氣的碎碎唸",
+    "desc": "宛如跟主人頂嘴講道理的長串喵嗚",
+    "duration": 3.0,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_trill_01",
+    "file": "audio/meows/cat10_trill_01.mp3",
+    "category": "happy",
+    "label": "喉音呼嚕親親鳴",
+    "desc": "伴隨喉部微震的溫暖呼嚕喵 (Trill)",
+    "duration": 2.0,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_trill_02",
+    "file": "audio/meows/cat10_trill_02.mp3",
+    "category": "happy",
+    "label": "摸摸下巴滿足呢喃",
+    "desc": "舒服閉眼時發出的軟綿綿咕嚕聲",
+    "duration": 2.3,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_trill_03",
+    "file": "audio/meows/cat10_trill_03.mp3",
+    "category": "happy",
+    "label": "翻肚伸懶腰輕哼",
+    "desc": "四腳朝天露出白肚子時的放鬆哼鳴",
+    "duration": 2.0,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_response_01",
+    "file": "audio/meows/cat10_response_01.mp3",
+    "category": "response",
+    "label": "一聲清脆回應",
+    "desc": "主人叫「小女生」時立刻回答的「喵！」",
+    "duration": 0.9,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_response_02",
+    "file": "audio/meows/cat10_response_02.mp3",
+    "category": "response",
+    "label": "活潑應答「我在這」",
+    "desc": "節奏明快的乾脆肯定聲",
+    "duration": 0.9,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_response_03",
+    "file": "audio/meows/cat10_response_03.mp3",
+    "category": "response",
+    "label": "跟主人對話點頭",
+    "desc": "尾音輕快短促的對話叫聲",
+    "duration": 0.8,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  },
+  {
+    "id": "cat10_response_04",
+    "file": "audio/meows/cat10_response_04.mp3",
+    "category": "response",
+    "label": "一唱一和「好唷」",
+    "desc": "開心答應主人指令的默契喵叫",
+    "duration": 0.65,
+    "source": "YouTube 5EEM__L612Y (十種貓叫聲)"
+  }
+]

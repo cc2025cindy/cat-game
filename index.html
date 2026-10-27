@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js 核心庫 (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- 3D 渲染畫布容器 -->
+  <div id="canvas-container"></div>
+
+  <!-- 開局身分選擇面板 (Start Role Selection Screen) -->
+  <div id="role-select-modal" class="modal-overlay active" style="z-index: 200;">
+    <div class="modal-card" style="max-width: 680px; text-align: center;">
+      <div style="font-size: 42px; margin-bottom: 8px;">🐱✨</div>
+      <div class="modal-tag">國語三上第六課〈小女生〉・3D沉浸式互動遊戲</div>
+      <h1 style="font-size: 26px; font-weight: 900; color: #b45309; margin-bottom: 8px;">
+        《<ruby>小<rt>ㄒㄧㄠˇ</rt>女<rt>ㄋㄩˇ</rt>生<rt>ㄕㄥ</rt></ruby>：膠水貓大冒險》
+      </h1>
+      <p style="font-size: 15px; color: #78350f; margin-bottom: 24px;">
+        請選擇你在 3D 故事世界中想要體驗的身分：
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+        <!-- 選項 1：扮演小女生（貓咪） -->
+        <div class="role-card" id="select-cat-card" onclick="selectRole('cat')">
+          <div style="font-size: 54px; margin-bottom: 10px;">🐾</div>
+          <h3 style="font-size: 20px; font-weight: 800; color: #ea580c; margin-bottom: 6px;">扮演「小女生」（貓咪）</h3>
+          <div style="font-size: 12px; color: #c2410c; font-weight: 700; margin-bottom: 10px;">【30cm 貼地貓貓視角】</div>
+          <p style="font-size: 13px; color: #6b7280; line-height: 1.6; text-align: left;">
+            • 在沙發四腳朝天翻白肚子<br>
+            • 當一隻隨時黏在主人身邊的「膠水貓」<br>
+            • 窗台拍蝴蝶、在洗手間門外喵喵叫<br>
+            • 跳上沙發大腿向主人討點心！
+          </p>
+          <button class="btn-confirm" style="margin-top: 16px; width: 100%;">選我！當可愛橘貓 🐱</button>
+        </div>
+
+        <!-- 選項 2：扮演小主人（作者） -->
+        <div class="role-card" id="select-human-card" onclick="selectRole('human')">
+          <div style="font-size: 54px; margin-bottom: 10px;">🧑‍🎨</div>
+          <h3 style="font-size: 20px; font-weight: 800; color: #2563eb; margin-bottom: 6px;">扮演「小主人」（人類）</h3>
+          <div style="font-size: 12px; color: #1d4ed8; font-weight: 700; margin-bottom: 10px;">【第三人稱守護者視角】</div>
+          <p style="font-size: 13px; color: #6b7280; line-height: 1.6; text-align: left;">
+            • 大叫「小女生——」呼喚貓咪飛奔過來<br>
+            • 坐在沙發上揮舞逗貓棒、摸摸下巴<br>
+            • 答對國語題目收集小魚乾餵食貓咪<br>
+            • 體驗人與寵物溫馨的陪伴與依賴！
+          </p>
+          <button class="btn-confirm" style="margin-top: 16px; width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb);">選我！當暖心鏟屎官 🏡</button>
+        </div>
+      </div>
+
+      <div style="font-size: 12px; color: #9ca3af;">
+        💡 提示：進入遊戲後，按 <kbd>V</kbd> 鍵可切換角色，滑鼠按住拖曳可 360° 旋轉視角！
+      </div>
+    </div>
+  </div>
+
+  <!-- UI 覆蓋層 -->
+  <div id="ui-overlay">
+    <!-- 頂部資訊列 -->
+    <header class="top-bar">
+      <div class="title-badge">
+        <span class="cat-icon" id="header-avatar-icon">🐱</span>
+        <div class="title-text">
+          <h1>第六課〈小女生〉3D 沉浸探索</h1>
+          <p id="role-status-text">目前身分：小女生（貓咪視角）</p>
+        </div>
+      </div>
+
+      <div class="stats-panel">
+        <div class="stat-pill" style="border: 2px solid #f6ad55; background: #fffcf8;">
+          <span class="icon">🐟</span>
+          <span id="treat-display">點心 x 3</span>
+        </div>
+        <div class="stat-pill">
+          <span class="icon">⭐</span>
+          <span id="score-display">0 分</span>
+        </div>
+        <div class="stat-pill">
+          <span class="icon">🏆</span>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar" style="width: 15%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-top">
+        <button class="icon-btn" id="btn-soundboard" title="貓叫聲百寶箱 (30種音效)" onclick="openSoundboard()">🐱🎵</button>
+        <button class="icon-btn" id="btn-toggle-view" title="切換身分 (V)">🔄</button>
+        <button class="icon-btn" id="btn-quiz-hub" title="國語百寶箱 (24題)" onclick="curriculumSystem.openQuizHub('all')">📖</button>
+        <button class="icon-btn" id="btn-bgm" title="開關音樂">🎵</button>
+        <button class="icon-btn" id="btn-mute" title="開關音效">🔊</button>
+      </div>
+    </header>
+
+    <!-- 主人說話語音氣泡字幕 -->
+    <div class="voice-bubble-container hidden" id="owner-voice-bubble">
+      <div class="voice-avatar" id="voice-speaker-avatar">🧒</div>
+      <div class="voice-content">
+        <div class="voice-speaker" id="voice-speaker-name">小主人</div>
+        <div class="voice-text" id="voice-subtitles">小女生，快過來～</div>
+      </div>
+    </div>
+
+    <!-- 畫面中央對話/呼喚動態提示 -->
+    <div class="center-prompt hidden" id="center-prompt">
+      <span id="prompt-text">🗣️ 對著空中大叫：「小女生——！」</span>
+    </div>
+
+    <!-- 貓人靠近時的即時互動捷徑浮島 -->
+    <div class="proximity-action-card hidden" id="proximity-card">
+      <div style="font-size: 13px; font-weight: 800; color: #9a3412; margin-bottom: 6px;" id="proximity-title">
+        🐾 小女生就在你身邊！
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="prox-btn" onclick="game.playWand()">🪶 逗弄羽毛</button>
+        <button class="prox-btn" onclick="game.petCatHead()">🖐️ 摸摸頭</button>
+        <button class="prox-btn" style="background:#fef3c7; border-color:#f59e0b;" onclick="game.feedCat()">🐟 餵小魚乾</button>
+        <button class="prox-btn" onclick="game.chatMeow()">💬 一唱一和</button>
+      </div>
+    </div>
+
+    <!-- 鍵盤與視角操作指南卡 -->
+    <div class="help-card" id="help-card">
+      <div style="font-weight: 800; margin-bottom: 4px; color: #fed7aa;" id="help-title">🎮 貓咪「小女生」操作指南</div>
+      <div>移動：<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> / 跳躍：<kbd>Space</kbd></div>
+      <div id="help-sit">坐下/起身：<kbd>F</kbd> 鍵（靠近沙發可坐下）</div>
+      <div>旋轉視角：滑鼠按住拖曳 360° / 滾輪縮放</div>
+      <div id="help-action">喵叫：<kbd>M</kbd> 鍵 / 翻肚：<kbd>B</kbd> 鍵 / 互動：<kbd>E</kbd> 鍵</div>
+    </div>
+
+    <!-- 底部操作列 (Action Dock) -->
+    <footer class="bottom-bar">
+      <div class="view-mode-tag" id="view-tag">
+        視角：小女生貓咪視角 (30cm)
+      </div>
+
+      <div class="action-dock" id="action-dock">
+        <!-- 主要行為按鈕 -->
+        <button class="dock-btn primary" id="btn-primary-action">
+          <span class="btn-icon">🗣️</span>
+          <span id="btn-primary-label">大叫小女生</span>
+        </button>
+
+        <!-- 坐上沙發按鈕 -->
+        <button class="dock-btn" id="btn-sit-sofa" onclick="game.toggleSitSofa()">
+          <span class="btn-icon">🛋️</span>
+          <span id="btn-sit-label">坐上沙發 (F)</span>
+        </button>
+
+        <!-- 餵食點心按鈕 -->
+        <button class="dock-btn" id="btn-feed-action" onclick="game.feedCat()">
+          <span class="btn-icon">🐟</span>
+          <span>餵食小魚乾</span>
+        </button>
+
+        <!-- 揮舞逗貓棒按鈕 -->
+        <button class="dock-btn" id="btn-wand-action" onclick="game.playWand()">
+          <span class="btn-icon">🪶</span>
+          <span>揮舞逗貓棒</span>
+        </button>
+
+        <!-- 撫摸白肚子 -->
+        <button class="dock-btn" id="btn-pet" onclick="curriculumSystem.startBellyRubInteraction()">
+          <span class="btn-icon">🖐️</span>
+          <span>揉揉白肚子</span>
+        </button>
+
+        <!-- 貓叫聲百寶箱 (30種音效) -->
+        <button class="dock-btn" style="background:#fce7f3; border: 2px solid #ec4899;" onclick="openSoundboard()">
+          <span class="btn-icon">🎵</span>
+          <span>貓叫百寶箱 (30種)</span>
+        </button>
+
+        <!-- 國語百寶箱 (24 道大題庫) -->
+        <button class="dock-btn" style="background:#ffedd5; border: 2px solid #f97316;" onclick="curriculumSystem.openQuizHub('all')">
+          <span class="btn-icon">📖</span>
+          <span>國語百寶箱 (24題)</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 教學關卡模態視窗 (Modal Dialog) -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close" title="關閉">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag" id="modal-tag">語文焦點</span>
+        <h2 class="modal-title" id="modal-title">標題</h2>
+        <div class="modal-desc" id="modal-desc">說明內容</div>
+      </div>
+      <div id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- 貓咪聲音百寶箱模態視窗 (30種真實貓叫聲) -->
+  <div class="modal-overlay" id="soundboard-modal">
+    <div class="modal-card soundboard-card">
+      <button class="modal-close" onclick="closeSoundboard()" title="關閉">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag" style="background:#fce7f3; color:#db2777;">十種貓叫聲·錄音庫</span>
+        <h2 class="modal-title">🐾 小女生的貓叫聲百寶箱 (30款真實音效)</h2>
+        <div class="modal-desc">源自 YouTube 高清貓狗音效《十種貓叫聲》，涵蓋幼貓奶萌、委屈討抱、肚子餓討吃、沉穩大貓、看到獵物牙齒打顫、歌劇波浪長腔、呼嚕呢喃與清脆對答等 10 種真實情境，點擊即可聆聽！</div>
+      </div>
+      <div class="soundboard-filters" id="soundboard-filters"></div>
+      <div class="soundboard-grid" id="soundboard-grid"></div>
+      <div class="modal-footer">
+        <button class="btn-confirm" onclick="closeSoundboard()">關閉百寶箱</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 引入音效、關卡邏輯與 3D 遊戲引擎 -->
+  <script src="js/audio.js"></script>
+  <script src="js/curriculum.js"></script>
+  <script src="js/game.js"></script>
+
+  <script>
+    function selectRole(role) {
+      if (window.soundSystem) {
+        window.soundSystem.init();
+        window.soundSystem.playSuccess();
+      }
+      const modal = document.getElementById('role-select-modal');
+      if (modal) modal.classList.remove('active');
+
+      if (window.game) {
+        window.game.setRole(role);
+      }
+    }
+
+    let activeSoundFilter = 'all';
+
+    function openSoundboard() {
+      if (window.soundSystem) window.soundSystem.resume();
+      renderSoundboardFilters();
+      renderSoundboardGrid();
+      const modal = document.getElementById('soundboard-modal');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeSoundboard() {
+      const modal = document.getElementById('soundboard-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function renderSoundboardFilters() {
+      const container = document.getElementById('soundboard-filters');
+      if (!container) return;
+      const categories = [
+        { id: 'all', label: '全部音效 (30)' },
+        { id: 'sweet', label: '🥰 幼貓奶萌 (5)' },
+        { id: 'calling', label: '🗣️ 委屈呼喚 (4)' },
+        { id: 'hungry', label: '🐟 肚子餓討吃 (4)' },
+        { id: 'alert', label: '🦁 沉穩大貓 (3)' },
+        { id: 'playful', label: '🪶 雀躍打顫 (4)' },
+        { id: 'growl', label: '🎭 戲劇歌唱 (3)' },
+        { id: 'happy', label: '💖 呼嚕親親 (3)' },
+        { id: 'response', label: '💬 一唱一和 (4)' }
+      ];
+
+      container.innerHTML = categories.map(cat => `
+        <button class="sound-filter-btn ${activeSoundFilter === cat.id ? 'active' : ''}" onclick="setSoundFilter('${cat.id}')">
+          ${cat.label}
+        </button>
+      `).join('');
+    }
+
+    function setSoundFilter(catId) {
+      activeSoundFilter = catId;
+      renderSoundboardFilters();
+      renderSoundboardGrid();
+    }
+
+    function renderSoundboardGrid() {
+      const grid = document.getElementById('soundboard-grid');
+      if (!grid || !window.MEOW_CATALOG) return;
+
+      const filtered = activeSoundFilter === 'all'
+        ? window.MEOW_CATALOG
+        : window.MEOW_CATALOG.filter(c => c.category === activeSoundFilter);
+
+      grid.innerHTML = filtered.map(item => `
+        <div class="sound-card" onclick="playSoundFromBoard('${item.id}', this)">
+          <div class="sound-card-header">
+            <span class="sound-cat-badge">${item.category}</span>
+            <span class="sound-duration">${item.duration}s</span>
+          </div>
+          <div class="sound-card-title">🐾 ${item.label}</div>
+          <div class="sound-card-desc">${item.desc}</div>
+          <div class="sound-card-play-hint">▶ 點擊播放</div>
+        </div>
+      `).join('');
+    }
+
+    function playSoundFromBoard(id, cardEl) {
+      if (window.soundSystem) {
+        window.soundSystem.playRealMeow(id);
+      }
+      if (cardEl) {
+        cardEl.classList.add('playing');
+        setTimeout(() => cardEl.classList.remove('playing'), 1500);
+      }
+    }
+  </script>
+</body>
+</html>
