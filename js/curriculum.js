@@ -227,7 +227,11 @@ class CurriculumSystem {
 
   promptInteract() {
     const st = this.ST[this.G.station];
-    if (!st || st.kind === 'story') return;
+    if (!st) return;
+    if (st.kind === 'story') {
+      this.showStoryStation(st);
+      return;
+    }
 
     this.G.mode = 'station';
     const modal = document.getElementById('station-modal');

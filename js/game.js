@@ -3238,7 +3238,10 @@ class GameEngine {
       }
 
       if (qMarker) {
-        if (cs.G.mode === 'explore' && st.kind !== 'story') {
+        if (cs.G.mode === 'explore') {
+          const mLbl = document.getElementById('quest-marker-label');
+          if (mLbl) mLbl.innerText = `第${cs.G.station}站：${st.quest || st.name}（點此作答）`;
+
           tempV.set(tPos.x, Math.max(0.65, tPos.y + 0.55), tPos.z);
           tempV.project(this.camera);
 
@@ -3246,11 +3249,11 @@ class GameEngine {
           let sy = (-tempV.y * 0.5 + 0.5) * window.innerHeight;
           if (tempV.z > 1) {
             sx = window.innerWidth - sx;
-            sy = window.innerHeight - 95;
+            sy = window.innerHeight - 105;
           }
-          // 保持在畫面可視範圍內，就算視角轉開也能在邊緣看到關卡方向並直接點擊作答
-          sx = Math.max(95, Math.min(window.innerWidth - 95, sx));
-          sy = Math.max(66, Math.min(window.innerHeight - 92, sy));
+          // 保持在畫面中央安全區內，絕不重疊頂部導航列或底部操作列，也不超出左右邊界
+          sx = Math.max(135, Math.min(window.innerWidth - 135, sx));
+          sy = Math.max(105, Math.min(window.innerHeight - 96, sy));
 
           qMarker.style.display = 'inline-flex';
           qMarker.style.left = `${sx}px`;
