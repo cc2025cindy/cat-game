@@ -1649,7 +1649,17 @@ class GameEngine {
     if (btnLabel) btnLabel.textContent = isSitting ? '離開沙發' : '坐上沙發';
   }
 
+  acquireActionLock(ms = 2400) {
+    const now = Date.now();
+    if (this._actionLockUntil && now < this._actionLockUntil) {
+      return false;
+    }
+    this._actionLockUntil = now + ms;
+    return true;
+  }
+
   playWand() {
+    if (!this.acquireActionLock(2400)) return;
     if (window.soundSystem) {
       window.soundSystem.playClick();
       setTimeout(() => window.soundSystem.playRealMeow('playful'), 300);
@@ -1660,7 +1670,8 @@ class GameEngine {
     this.spawnHeartsNear(this.catPos);
 
     let step = 0;
-    const interval = setInterval(() => {
+    if (this._wandInterval) clearInterval(this._wandInterval);
+    this._wandInterval = setInterval(() => {
       step++;
       if (this.playerNodes.armR) {
         this.playerNodes.armR.rotation.x = Math.sin(step * 0.8) * 0.55;
@@ -1670,13 +1681,15 @@ class GameEngine {
         this.cat.position.y = 0 + Math.abs(Math.sin(step * 0.6)) * 0.22;
       }
       if (step > 15) {
-        clearInterval(interval);
+        clearInterval(this._wandInterval);
+        this._wandInterval = null;
         if (this.cat && this.catIsGrounded) this.cat.position.y = 0;
       }
     }, 50);
   }
 
   petCatHead() {
+    if (!this.acquireActionLock(2600)) return;
     this.isPetting = true;
     if (window.soundSystem) {
       window.soundSystem.startPurr();
@@ -1690,11 +1703,12 @@ class GameEngine {
     setTimeout(() => {
       this.isPetting = false;
       if (window.soundSystem) window.soundSystem.stopPurr();
-    }, 2800);
+    }, 2600);
   }
 
   feedCat() {
     if (!window.curriculumSystem) return;
+    if (!this.acquireActionLock(2400)) return;
 
     const success = window.curriculumSystem.consumeTreat();
     if (success) {
@@ -1731,15 +1745,13 @@ class GameEngine {
   }
 
   chatMeow() {
+    if (!this.acquireActionLock(2800)) return;
     if (window.voiceSystem) {
       window.voiceSystem.speak('chat');
     }
     setTimeout(() => {
       if (window.soundSystem) window.soundSystem.playRealMeow('calling');
-    }, 800);
-    setTimeout(() => {
-      if (window.soundSystem) window.soundSystem.playRealMeow('response');
-    }, 1800);
+    }, 900);
   }
 
   spawnHeartsNear(pos) {
@@ -1891,27 +1903,44 @@ class GameEngine {
   }
 
   catJump() {
-    if (this.catIsGrounded) {
-      this.catVelocityY = 4.2;
+    const now = Date.now();
+    if (this._lastJumpTime && now - this._lastJumpTime < 650) return;
+    this._lastJumpTime = now;
+
+    if (this.catState === 'sleep_belly_up') {
+      this.catState = 'walk';
+      this.bellyUpFactor = 0;
+      if (window.soundSystem) window.soundSystem.stopPurr();
+    }
+
+    if (this.catIsGrounded || this.catPos.y <= this.getSurfaceHeight(this.catPos.x, this.catPos.z) + 0.05) {
+      this.catVelocityY = 4.6;
       this.catIsGrounded = false;
       this.catState = 'jumping';
+
+      // 若小貓站在沙發前緣，按下跳躍可輕鬆一躍跳上沙發座墊；若在沙發上按下跳躍則可輕巧跳下地面
+      if (Math.abs(this.catPos.x) < 1.35 && this.catPos.z > 0.25 && this.catPos.z < 0.92 && this.catPos.y < 0.2) {
+        this.catPos.z = 1.25;
+      } else if (this.catPos.y >= 0.50 && this.catPos.z >= 0.92 && this.catPos.z <= 1.76 && !this.isCatMoving) {
+        this.catPos.z = 0.55;
+      }
+
       if (window.soundSystem) {
         window.soundSystem.stopPurr();
-        window.soundSystem.playMeow('high');
+        window.soundSystem.playClick();
       }
     }
   }
 
   catMeow() {
-    let clipDesc = '喵～～';
+    if (!this.acquireActionLock(2000)) return;
     if (window.soundSystem) {
-      const clip = window.soundSystem.playRealMeow();
-      if (clip) clipDesc = `${clip.label}（${clip.desc}）`;
+      window.soundSystem.playRealMeow();
     }
-    this.showPrompt(`🐾 小女生真實叫聲：${clipDesc}！🐱`);
   }
 
   catRollOver() {
+    if (!this.acquireActionLock(1500)) return;
     if (this.catState === 'sleep_belly_up') {
       // 若已在翻肚，再次按下 B 鍵主動翻回站立，並立即停止呼嚕！
       this.catState = 'sit';
@@ -1927,6 +1956,7 @@ class GameEngine {
   }
 
   callCat() {
+    if (!this.acquireActionLock(2800)) return;
     if (window.soundSystem) window.soundSystem.resume();
     if (window.voiceSystem) {
       window.voiceSystem.speak('call');
@@ -1938,14 +1968,12 @@ class GameEngine {
         this.setCatAIState('walk_to_player', true);
         if (window.soundSystem) {
           window.soundSystem.playRealMeow('calling');
-          setTimeout(() => window.soundSystem.playRealMeow('response'), 750);
-          setTimeout(() => window.soundSystem.playRealMeow('happy'), 1600);
         }
       } else {
         this.setCatAIState('unhappy');
         if (window.soundSystem) window.soundSystem.playRealMeow('growl');
       }
-    }, 800);
+    }, 900);
   }
 
   setCatAIState(state, happy = true) {
@@ -2783,7 +2811,7 @@ class GameEngine {
       nextPos.x += normDir.x * currentSpeed * delta;
       nextPos.z += normDir.z * currentSpeed * delta;
 
-      const isCatOnSofa = this.catPos.y >= 0.52;
+      const isCatOnSofa = this.catPos.y >= 0.25 || !this.catIsGrounded;
       const resolved = this.resolveCollision(nextPos, 0.22, false, isCatOnSofa);
 
       this.catPos.x = resolved.x;

@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261027_10">
+  <link rel="stylesheet" href="css/style.css?v=20261027_11">
   <!-- Three.js 核心庫 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -122,7 +122,6 @@
 
       <div class="controls-top">
         <button class="icon-btn" id="btn-qrcode" title="手機掃碼遊玩 (QR Code)" onclick="openQrModal()">📱</button>
-        <button class="icon-btn" id="btn-soundboard" title="貓叫聲百寶箱 (30種音效)" onclick="openSoundboard()">🐱🎵</button>
         <button class="icon-btn" id="btn-toggle-view" title="切換身分 (V)">🔄</button>
         <button class="icon-btn" id="btn-stages-top" title="關卡一覽 (章節)" onclick="curriculumSystem.openStagesModal()">📖</button>
         <button class="icon-btn" id="btn-bgm" title="開關音樂">🎵</button>
@@ -203,9 +202,9 @@
           <span class="btn-icon">🖐️</span>
           <span>摸摸肚肚</span>
         </button>
-        <button class="dock-btn" style="background:#fce7f3; border: 1.5px solid #ec4899;" onclick="openSoundboard()">
-          <span class="btn-icon">🎵</span>
-          <span>貓叫百寶箱</span>
+        <button class="dock-btn" id="btn-jump-dock" style="background:#e0f2fe; border: 1.5px solid #38bdf8;" onclick="game.catJump()">
+          <span class="btn-icon">⬆️</span>
+          <span>貓咪跳躍</span>
         </button>
         <button class="dock-btn" style="background:#ffedd5; border: 1.5px solid #f97316;" onclick="curriculumSystem.openStagesModal()">
           <span class="btn-icon">📖</span>
@@ -213,6 +212,12 @@
         </button>
       </div>
     </footer>
+
+    <!-- 手機與平板專屬獨立跳躍鍵 (支援左手推搖桿同時右手點跳躍) -->
+    <button id="btn-touch-jump" class="touch-jump-btn" onclick="game.catJump()" ontouchstart="event.preventDefault(); game.catJump();">
+      <span style="font-size:16px; line-height:1;">⬆️</span>
+      <span style="font-size:11px; font-weight:800;">跳躍</span>
+    </button>
 
     <!-- 行動裝置虛擬搖桿 (#pad 與 #padKnob，滿足 touch_check.py 檢查) -->
     <div id="pad">
@@ -350,10 +355,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261027_10"></script>
-  <script src="js/audio.js?v=20261027_10"></script>
-  <script src="js/curriculum.js?v=20261027_10"></script>
-  <script src="js/game.js?v=20261027_10"></script>
+  <script src="js/stations.js?v=20261027_11"></script>
+  <script src="js/audio.js?v=20261027_11"></script>
+  <script src="js/curriculum.js?v=20261027_11"></script>
+  <script src="js/game.js?v=20261027_11"></script>
 
   <script>
     function selectRole(role) {

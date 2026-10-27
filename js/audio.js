@@ -72,6 +72,9 @@ class SoundSystem {
     this.audioBuffers = new Map();
     this.audioElements = new Map();
     this.isPurring = false;
+    this.meowLockUntil = 0;
+    this.activeMeowSource = null;
+    this.activeMeowAudio = null;
   }
 
   init() {
@@ -149,6 +152,15 @@ class SoundSystem {
     this.resume();
     if (this.isMuted) return null;
 
+    // 防連點保護：若上一段貓叫聲仍在播放中或冷卻時間未到，直接忽略新觸發，杜絕連按狂叫
+    const now = Date.now();
+    if (now < this.meowLockUntil) {
+      return null;
+    }
+    if (this.activeMeowAudio && !this.activeMeowAudio.paused && !this.activeMeowAudio.ended) {
+      return null;
+    }
+
     let candidates = this.catalog;
     if (categoryOrId && categoryOrId !== 'random') {
       const byId = this.catalog.find(m => m.id === categoryOrId);
@@ -161,6 +173,8 @@ class SoundSystem {
     }
 
     const item = candidates[Math.floor(Math.random() * candidates.length)] || this.catalog[0];
+    const lockMs = Math.max(1800, Math.round((item.duration || 1.6) * 1000) + 250);
+    this.meowLockUntil = now + lockMs;
 
     // 優先使用 Web Audio API 解碼 Buffer 播放（具備隨機微幅 pitch 變奏）
     if (this.audioBuffers.has(item.id)) {
@@ -171,6 +185,10 @@ class SoundSystem {
         // 隨機微調播放速率 0.96 ~ 1.04，使同一段叫聲每次聽起來都有細膩真實感
         source.playbackRate.value = 0.96 + Math.random() * 0.08;
         source.connect(this.sfxGain);
+        this.activeMeowSource = source;
+        source.onended = () => {
+          if (this.activeMeowSource === source) this.activeMeowSource = null;
+        };
         source.start(0);
         return item;
       } catch (e) {}
@@ -180,6 +198,10 @@ class SoundSystem {
     try {
       const audio = new Audio(item.file);
       audio.volume = 0.8;
+      this.activeMeowAudio = audio;
+      audio.onended = () => {
+        if (this.activeMeowAudio === audio) this.activeMeowAudio = null;
+      };
       audio.play().catch(() => {
         // 若完全不支援音訊檔案則降級為程式合成
         this.playSyntheticMeow(item.category);
@@ -589,6 +611,16 @@ class VoiceSystem {
       return;
     }
 
+    const now = Date.now();
+    // 防連點保護：若目前已有任何語音正在播放中，或距離上次語音觸發未滿 2.5 秒，嚴格忽略新觸發，防止學生狂按導致語音重複鬼打牆
+    if (
+      (this.voiceLockUntil && now < this.voiceLockUntil) ||
+      (this.currentAudio && !this.currentAudio.paused && !this.currentAudio.ended) ||
+      (this.synth && this.synth.speaking)
+    ) {
+      return;
+    }
+
     // 尋找匹配的高音質自然語音檔案
     let foundKey = this.clipMap[textOrKey] ? textOrKey : null;
     let foundEntry = foundKey ? this.clipMap[foundKey] : null;
@@ -606,32 +638,9 @@ class VoiceSystem {
 
     const displayText = foundEntry ? foundEntry.text : textOrKey;
     this.showSubtitle(displayText, subtitleTitle);
+    this.voiceLockUntil = now + 2600;
 
     if (foundEntry) {
-      const now = Date.now();
-      // 若同一支語音剛在 2.2 秒內啟動且正在播放中，避免重複觸發把自己的聲音切斷
-      if (
-        foundKey &&
-        this.lastPlayedKey === foundKey &&
-        now - this.lastPlayedTime < 2200 &&
-        this.currentAudio &&
-        !this.currentAudio.paused &&
-        !this.currentAudio.ended
-      ) {
-        if (callback) {
-          this.currentAudio.onended = callback;
-        }
-        return;
-      }
-
-      // 停止先前播放的其他語音
-      if (this.currentAudio) {
-        try {
-          this.currentAudio.pause();
-          this.currentAudio.currentTime = 0;
-        } catch (e) {}
-      }
-
       const audio = (foundKey && this.audioPool[foundKey]) ? this.audioPool[foundKey] : new Audio(foundEntry.file);
       audio.muted = false;
       audio.volume = 0.98;
@@ -643,13 +652,13 @@ class VoiceSystem {
       this.lastPlayedKey = foundKey;
       this.lastPlayedTime = now;
 
-      if (callback) {
-        audio.onended = callback;
-      } else {
-        audio.onended = null;
-      }
+      audio.onended = () => {
+        this.voiceLockUntil = Date.now() + 300;
+        if (callback) callback();
+      };
 
       audio.play().catch(() => {
+        this.voiceLockUntil = 0;
         // 若音檔尚未放入或瀏覽器阻擋，使用預備合成語音
         this.speakFallback(displayText, callback);
       });

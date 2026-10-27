@@ -1874,7 +1874,39 @@ body.screen-hurt::after {
   to { transform: scale(1.06); box-shadow: 0 8px 22px rgba(245, 158, 11, 0.7); }
 }
 
-/* 右下操作列專屬醒目「本關作答」按鈕 */
+/* 手機與平板專屬獨立半透明跳躍鍵 */
+.touch-jump-btn {
+  position: fixed;
+  right: 16px;
+  bottom: 74px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 2px solid rgba(56, 189, 248, 0.65);
+  color: #0369a1;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  cursor: pointer;
+  z-index: 120;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.touch-jump-btn:active {
+  transform: scale(0.92);
+  background: rgba(224, 242, 254, 0.65);
+}
+#soundboard-modal {
+  display: none !important;
+}
 .dock-btn.quiz-go-btn {
   background: linear-gradient(135deg, #10b981, #059669) !important;
   border: 1.5px solid #a7f3d0 !important;
