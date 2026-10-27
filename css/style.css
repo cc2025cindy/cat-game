@@ -107,20 +107,23 @@ rt {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: 10px 20px;
   background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0) 100%);
   pointer-events: auto;
 }
 
-.title-badge {
-  display: flex;
+.top-bar .title-badge {
+  display: flex !important;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--card-bg);
-  padding: 8px 18px;
-  border-radius: 30px;
+  padding: 5px 14px !important;
+  border-radius: 26px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   border: 2px solid var(--primary-orange);
+  margin: 0 !important;
+  height: 44px !important;
+  box-sizing: border-box !important;
 }
 
 .cat-icon {
@@ -135,13 +138,17 @@ rt {
 }
 
 .title-text h1 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 800;
   color: #b75500;
+  margin: 0 !important;
+  line-height: 1.2 !important;
 }
 .title-text p {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
+  margin: 2px 0 0 0 !important;
+  line-height: 1.2 !important;
 }
 
 .stats-panel {
@@ -1243,7 +1250,7 @@ rt {
   font-size: 48px;
   margin-bottom: 8px;
 }
-.title-badge {
+.title-card .title-badge {
   display: inline-block;
   background: #ffedd5;
   color: #c2410c;
@@ -1360,40 +1367,55 @@ rt {
   will-change: transform;
 }
 
+/* 左側任務與提示直向群組 (垂直堆疊，不重疊頂部) */
+.mission-hud-group {
+  position: fixed;
+  top: 68px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 80;
+  pointer-events: none;
+  max-width: 320px;
+}
+.mission-hud-group .quest-banner,
+.mission-hud-group .prompt-diamond {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  pointer-events: auto !important;
+}
+
 /* 任務橫幅與提示菱形 */
 .quest-banner {
-  position: fixed;
-  top: 76px;
-  left: 24px;
   background: rgba(255, 255, 255, 0.95);
   border-left: 5px solid #f97316;
   border-radius: 14px;
-  padding: 10px 16px;
+  padding: 8px 14px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
   pointer-events: auto;
   z-index: 80;
   max-width: 320px;
 }
 .quest-title {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #9a3412;
   margin-bottom: 2px;
 }
 .quest-desc {
-  font-size: 12px;
+  font-size: 11.5px;
   color: #78716c;
 }
 .prompt-diamond {
-  position: fixed;
-  top: 135px;
-  left: 24px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  align-self: flex-start;
   gap: 8px;
   background: #fff7ed;
   border: 1.5px solid #fdba74;
-  padding: 6px 12px;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
@@ -1402,6 +1424,11 @@ rt {
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.15);
   pointer-events: auto;
   z-index: 80;
+  transition: transform 0.2s, background 0.2s;
+}
+.prompt-diamond:hover {
+  transform: scale(1.04);
+  background: #ffedd5;
 }
 .prompt-diamond::before {
   content: '◆';
@@ -1749,13 +1776,40 @@ body.screen-hurt::after {
   .choice-grid {
     grid-template-columns: 1fr;
   }
-  .quest-banner {
-    left: 12px;
-    top: 65px;
-    max-width: calc(100vw - 24px);
-  }
-  .prompt-diamond {
-    left: 12px;
-    top: 125px;
-  }
+}
+
+/* 作答按鈕點擊回饋樣式 */
+.choice-btn.correct-choice {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4) !important;
+  transform: scale(1.02);
+}
+.choice-btn.wrong-choice {
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+  font-weight: 800 !important;
+  animation: shakeWrong 0.35s ease-in-out;
+}
+@keyframes shakeWrong {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* 底部功能列家具靠近時高亮動態按鈕 */
+.dock-btn.highlight-item-btn {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa) !important;
+  border: 2px solid #f59e0b !important;
+  color: #9a3412 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.5) !important;
+  animation: pulseGold 1.2s infinite alternate ease-in-out !important;
+}
+@keyframes pulseGold {
+  from { transform: scale(1); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+  to { transform: scale(1.06); box-shadow: 0 8px 22px rgba(245, 158, 11, 0.7); }
 }

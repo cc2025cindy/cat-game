@@ -241,6 +241,10 @@ class CurriculumSystem {
   }
 
   renderQuestionModal(q) {
+    if (this._nextQTimer) {
+      clearTimeout(this._nextQTimer);
+      this._nextQTimer = null;
+    }
     const modal = document.getElementById('quiz-modal');
     if (!modal) return;
     modal.classList.add('active');
@@ -264,7 +268,14 @@ class CurriculumSystem {
         const btn = document.createElement('button');
         btn.className = 'choice-btn';
         btn.innerHTML = `<span class="choice-letter">${['A', 'B', 'C', 'D'][idx]}</span> ${opt}`;
-        btn.onclick = () => this.checkAnswer(idx === q.answer, q);
+        btn.onclick = () => {
+          if (idx === q.answer) {
+            btn.classList.add('correct-choice');
+          } else {
+            btn.classList.add('wrong-choice');
+          }
+          this.checkAnswer(idx === q.answer, q);
+        };
         grid.appendChild(btn);
       });
       body.appendChild(grid);
@@ -274,12 +285,20 @@ class CurriculumSystem {
       const btnT = document.createElement('button');
       btnT.className = 'choice-btn tf-btn';
       btnT.innerHTML = '⭕ <b>正確 (O)</b>';
-      btnT.onclick = () => this.checkAnswer(q.answer === true, q);
+      btnT.onclick = () => {
+        if (q.answer === true) btnT.classList.add('correct-choice');
+        else btnT.classList.add('wrong-choice');
+        this.checkAnswer(q.answer === true, q);
+      };
 
       const btnF = document.createElement('button');
       btnF.className = 'choice-btn tf-btn';
       btnF.innerHTML = '❌ <b>錯誤 (X)</b>';
-      btnF.onclick = () => this.checkAnswer(q.answer === false, q);
+      btnF.onclick = () => {
+        if (q.answer === false) btnF.classList.add('correct-choice');
+        else btnF.classList.add('wrong-choice');
+        this.checkAnswer(q.answer === false, q);
+      };
 
       grid.appendChild(btnT);
       grid.appendChild(btnF);
@@ -436,6 +455,10 @@ class CurriculumSystem {
   }
 
   checkAnswer(isCorrect, q) {
+    if (this._nextQTimer) {
+      clearTimeout(this._nextQTimer);
+      this._nextQTimer = null;
+    }
     const feedback = document.getElementById('quiz-feedback');
     const optionsContainer = document.getElementById('quiz-options-container');
 
@@ -465,13 +488,15 @@ class CurriculumSystem {
 
       if (feedback) {
         feedback.className = 'quiz-feedback-box success';
-        feedback.innerHTML = '🎉 <b>太棒了！答對了！獲得 1 包小魚乾點心！</b>';
+        feedback.innerHTML = `
+          <div style="font-size:15px; font-weight:800; margin-bottom:6px;">🎉 太棒了！答對了！獲得 1 包小魚乾點心！</div>
+          <button class="btn-confirm next-q-btn" id="btn-next-step" onclick="curriculumSystem.nextQuestion()" style="margin-top:8px; width:100%; font-size:15px; padding:10px 18px; border-radius:12px; cursor:pointer;">繼續下一題 ➔</button>
+        `;
       }
 
-      setTimeout(() => {
-        this.currentStepIdx++;
-        this.runCurrentStep();
-      }, 900);
+      this._nextQTimer = setTimeout(() => {
+        this.nextQuestion();
+      }, 1400);
     } else {
       try {
         if (window.soundSystem) {
@@ -488,8 +513,39 @@ class CurriculumSystem {
 
       if (feedback) {
         feedback.className = 'quiz-feedback-box error';
-        feedback.innerHTML = `💡 <b>提示：</b>${q.hint}`;
+        feedback.innerHTML = `
+          <div style="margin-bottom:8px;">💡 <b>提示：</b>${q.hint}</div>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn-secondary" onclick="curriculumSystem.retryQuestion()" style="flex:1; padding:9px 12px; font-size:14px; border-radius:10px; cursor:pointer;">再試一次 🔄</button>
+            <button class="btn-confirm" onclick="curriculumSystem.nextQuestion()" style="flex:1; padding:9px 12px; font-size:14px; border-radius:10px; cursor:pointer;">繼續下一題 ➔</button>
+          </div>
+        `;
       }
+    }
+  }
+
+  nextQuestion() {
+    if (this._nextQTimer) {
+      clearTimeout(this._nextQTimer);
+      this._nextQTimer = null;
+    }
+    this.currentStepIdx++;
+    this.runCurrentStep();
+  }
+
+  retryQuestion() {
+    if (this._nextQTimer) {
+      clearTimeout(this._nextQTimer);
+      this._nextQTimer = null;
+    }
+    const feedback = document.getElementById('quiz-feedback');
+    if (feedback) {
+      feedback.className = 'quiz-feedback-box hidden';
+      feedback.innerText = '';
+    }
+    const st = this.ST[this.G.station];
+    if (st && st.steps && st.steps[this.currentStepIdx]) {
+      this.renderQuestionModal(st.steps[this.currentStepIdx]);
     }
   }
 

@@ -127,15 +127,15 @@
       </div>
     </header>
 
-    <!-- 任務橫幅 (Quest Banner) -->
-    <div id="quest-banner" class="quest-banner">
-      <div id="quest-title" class="quest-title">走向洗手間門口</div>
-      <div id="quest-desc" class="quest-desc">觀察小女生在門外的舉動</div>
-    </div>
-
-    <!-- 提示菱形 (Prompt Diamond) -->
-    <div id="prompt-diamond" class="prompt-diamond" onclick="window.__bird && window.__bird.interact()">
-      <span id="prompt-text">聆聽門外的喵喵叫</span>
+    <!-- 任務橫幅與提示菱形群組 (獨立左側直向排版，絕不遮擋頂部標題) -->
+    <div id="mission-hud-group" class="mission-hud-group">
+      <div id="quest-banner" class="quest-banner">
+        <div id="quest-title" class="quest-title">走向洗手間門口</div>
+        <div id="quest-desc" class="quest-desc">觀察小女生在門外的舉動</div>
+      </div>
+      <div id="prompt-diamond" class="prompt-diamond" onclick="window.__bird && window.__bird.interact()">
+        <span id="prompt-text">聆聽門外的喵喵叫</span>
+      </div>
     </div>
 
     <!-- 活動邊界 Toast (已停用並永久隱藏，保持視線清爽) -->
@@ -174,8 +174,8 @@
           <span class="btn-icon">🗣️</span>
           <span id="btn-primary-label">與貓咪對話</span>
         </button>
-        <button class="dock-btn" id="btn-sit-sofa" onclick="game.openFurnitureModal('sofa')">
-          <span class="btn-icon">🛋️</span>
+        <button class="dock-btn" id="btn-sit-sofa" onclick="game.interactNearbyOrOpenModal()">
+          <span class="btn-icon" id="btn-sit-icon">🛋️</span>
           <span id="btn-sit-label">客廳沙發 (F)</span>
         </button>
         <button class="dock-btn" id="btn-feed-action" onclick="game.feedCat()">
