@@ -523,11 +523,17 @@ class VoiceSystem {
       'tree': { file: 'audio/voice/tree.mp3', text: '小女生，要不要爬上貓跳台看風景呀？' },
       'belly': { file: 'audio/voice/belly.mp3', text: '摸摸毛茸茸的白肚子，像蓋了一條白色小被子呢！' },
       'treat_empty': { file: 'audio/voice/treat_empty.mp3', text: '點心吃光囉！快回答國語題目賺小魚乾吧～' },
-      'praise': { file: 'audio/voice/praise.mp3', text: '太棒了，答對囉！小女生好崇拜你！' }
+      'praise': { file: 'audio/voice/praise.mp3', text: '太棒了，答對囉！小女生好崇拜你！' },
+      'family': { file: 'audio/voice/family.mp3', text: '像個可愛的小孩，陪伴我和家人說話。', optional: true },
+      'door': { file: 'audio/voice/door.mp3', text: '小女生乖～我洗完澡就馬上出來陪你！', optional: true }
     };
 
     this.audioPool = {};
+    this.lastPlayedKey = null;
+    this.lastPlayedTime = 0;
+
     Object.keys(this.clipMap).forEach(k => {
+      if (this.clipMap[k].optional) return;
       try {
         const aud = new Audio(this.clipMap[k].file);
         aud.preload = 'auto';
@@ -535,7 +541,31 @@ class VoiceSystem {
       } catch (e) {}
     });
 
+    this.setupUnlock();
     this.init();
+  }
+
+  setupUnlock() {
+    if (typeof window === 'undefined') return;
+    const unlock = () => {
+      if (this._unlocked) return;
+      this._unlocked = true;
+      // 預熱 praise 音軌以確保手機瀏覽器在計時器或關卡切換時也能無縫播放
+      const praiseAud = this.audioPool['praise'];
+      if (praiseAud) {
+        praiseAud.muted = true;
+        praiseAud.play().then(() => {
+          praiseAud.pause();
+          praiseAud.currentTime = 0;
+          praiseAud.muted = false;
+        }).catch(() => {
+          praiseAud.muted = false;
+        });
+      }
+    };
+    window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+    window.addEventListener('touchstart', unlock, { once: true, passive: true });
+    window.addEventListener('click', unlock, { once: true, passive: true });
   }
 
   init() {
@@ -561,30 +591,67 @@ class VoiceSystem {
     }
 
     // 尋找匹配的高音質自然語音檔案
-    let foundEntry = this.clipMap[textOrKey];
+    let foundKey = this.clipMap[textOrKey] ? textOrKey : null;
+    let foundEntry = foundKey ? this.clipMap[foundKey] : null;
     if (!foundEntry) {
       // 比對文字前綴或關鍵字
       const k = Object.keys(this.clipMap).find(key => {
         const t = this.clipMap[key].text;
         return textOrKey.includes(t.slice(0, 4)) || t.includes(textOrKey.slice(0, 4));
       });
-      if (k) foundEntry = this.clipMap[k];
+      if (k) {
+        foundKey = k;
+        foundEntry = this.clipMap[k];
+      }
     }
 
     const displayText = foundEntry ? foundEntry.text : textOrKey;
     this.showSubtitle(displayText, subtitleTitle);
 
     if (foundEntry) {
-      // 停止先前播放的語音
-      if (this.currentAudio) {
-        this.currentAudio.pause();
-        this.currentAudio.currentTime = 0;
+      const now = Date.now();
+      // 若同一支語音剛在 2.2 秒內啟動且正在播放中，避免重複觸發把自己的聲音切斷
+      if (
+        foundKey &&
+        this.lastPlayedKey === foundKey &&
+        now - this.lastPlayedTime < 2200 &&
+        this.currentAudio &&
+        !this.currentAudio.paused &&
+        !this.currentAudio.ended
+      ) {
+        if (callback) {
+          this.currentAudio.onended = callback;
+        }
+        return;
       }
-      const audio = new Audio(foundEntry.file + '?v=user_voice_1');
+
+      // 停止先前播放的其他語音
+      if (this.currentAudio) {
+        try {
+          this.currentAudio.pause();
+          this.currentAudio.currentTime = 0;
+        } catch (e) {}
+      }
+
+      const audio = (foundKey && this.audioPool[foundKey]) ? this.audioPool[foundKey] : new Audio(foundEntry.file);
+      audio.muted = false;
+      audio.volume = 0.98;
+      try {
+        audio.currentTime = 0;
+      } catch (e) {}
+
       this.currentAudio = audio;
-      audio.volume = 0.95;
-      if (callback) audio.onended = callback;
+      this.lastPlayedKey = foundKey;
+      this.lastPlayedTime = now;
+
+      if (callback) {
+        audio.onended = callback;
+      } else {
+        audio.onended = null;
+      }
+
       audio.play().catch(() => {
+        // 若音檔尚未放入或瀏覽器阻擋，使用預備合成語音
         this.speakFallback(displayText, callback);
       });
       return;
@@ -615,23 +682,12 @@ class VoiceSystem {
   }
 
   showSubtitle(text, title = '小主人') {
-    if (typeof document === 'undefined') return;
-    const el = document.getElementById('owner-voice-bubble');
-    if (!el) return;
-    el.innerHTML = `
-      <div class="speech-avatar">🧑‍🎨</div>
-      <div class="speech-body">
-        <div class="speech-name">${title}</div>
-        <div class="speech-content">${text}</div>
-      </div>
-    `;
-    el.classList.remove('hidden');
-    el.classList.add('pop-in');
-    clearTimeout(this.subtitleTimer);
-    this.subtitleTimer = setTimeout(() => {
+    // 直接播放真實語音，不彈出大型台詞氣泡框，避免遮擋手機 3D 遊玩畫面
+    const el = typeof document !== 'undefined' ? document.getElementById('owner-voice-bubble') : null;
+    if (el) {
       el.classList.remove('pop-in');
       el.classList.add('hidden');
-    }, 4200);
+    }
   }
 }
 

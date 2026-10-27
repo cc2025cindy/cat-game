@@ -1627,10 +1627,9 @@ class GameEngine {
       if (this.playerNodes.torso) this.playerNodes.torso.position.y = 0; // 軀幹絕不單獨偏移
       this.updateSitBtnUI(true);
       if (window.soundSystem) window.soundSystem.playClick();
-      this.showPrompt('🛋️ 小主人舒服地坐在沙發上，欣賞水族館電視！');
 
       if (window.voiceSystem) {
-        window.voiceSystem.speak('小女生快來，一起坐在沙發上休息吧！', '小主人（拍拍沙發）');
+        window.voiceSystem.speak('sofa');
       }
 
       setTimeout(() => {
@@ -1640,7 +1639,6 @@ class GameEngine {
           this.cat.rotation.y = 0; // 面對主人
           this.catState = 'rub_leg';
           if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
-          this.showPrompt('🐱 小女生輕盈跳上沙發，靠在你的大腿邊撒嬌喵叫！🥰');
         }
       }, 700);
     }
@@ -1648,7 +1646,7 @@ class GameEngine {
 
   updateSitBtnUI(isSitting) {
     const btnLabel = document.getElementById('btn-sit-label');
-    if (btnLabel) btnLabel.textContent = isSitting ? '離開沙發 (F)' : '坐上沙發 (F)';
+    if (btnLabel) btnLabel.textContent = isSitting ? '離開沙發' : '坐上沙發';
   }
 
   playWand() {
@@ -1657,9 +1655,8 @@ class GameEngine {
       setTimeout(() => window.soundSystem.playRealMeow('playful'), 300);
     }
     if (window.voiceSystem) {
-      window.voiceSystem.speak('看這邊！抓得到羽毛嗎？跳得真高！', '小主人（揮舞逗貓棒）');
+      window.voiceSystem.speak('wand');
     }
-    this.showPrompt('🪶 揮舞羽毛逗貓棒！小女生興奮地撲爪！✨');
     this.spawnHeartsNear(this.catPos);
 
     let step = 0;
@@ -1686,9 +1683,9 @@ class GameEngine {
       window.soundSystem.playRealMeow('happy');
     }
     if (window.voiceSystem) {
-      window.voiceSystem.speak('真乖～摸摸下巴，好享受呢！', '小主人（摸摸下巴）');
+      this._petToggle = !this._petToggle;
+      window.voiceSystem.speak(this._petToggle ? 'belly' : 'pet');
     }
-    this.showPrompt('🖐️ 摸摸小女生的頭與下巴，牠瞇起眼睛舒服地呼嚕呼嚕～💖');
     this.spawnHeartsNear(this.catPos);
     setTimeout(() => {
       this.isPetting = false;
@@ -1706,9 +1703,8 @@ class GameEngine {
         setTimeout(() => window.soundSystem.playRealMeow('hungry'), 350);
       }
       if (window.voiceSystem) {
-        window.voiceSystem.speak('來吃香噴噴的小魚乾囉！多吃一點～', '小主人（餵食點心）');
+        window.voiceSystem.speak('feed');
       }
-      this.showPrompt('🐟 遞出香噴噴小魚乾！小女生大口咀嚼，親密度 +10！😋');
       this.spawnHeartsNear(this.catPos);
       window.curriculumSystem.addScore(10, null);
 
@@ -1725,16 +1721,18 @@ class GameEngine {
       }, 60);
     } else {
       if (window.soundSystem) window.soundSystem.playError();
-      this.showPrompt('💡 點心吃光了！快點擊【國語百寶箱】回答題目，賺取更多小魚乾吧！🐟');
+      if (window.voiceSystem) {
+        window.voiceSystem.speak('treat_empty');
+      }
       setTimeout(() => {
         window.curriculumSystem.openQuizHub('all');
-      }, 1000);
+      }, 1500);
     }
   }
 
   chatMeow() {
     if (window.voiceSystem) {
-      window.voiceSystem.speak('小女生，今天心情好嗎？', '小主人（溫柔對話）');
+      window.voiceSystem.speak('chat');
     }
     setTimeout(() => {
       if (window.soundSystem) window.soundSystem.playRealMeow('calling');
@@ -1742,7 +1740,6 @@ class GameEngine {
     setTimeout(() => {
       if (window.soundSystem) window.soundSystem.playRealMeow('response');
     }, 1800);
-    this.showPrompt('💬 「小女生～」「喵～」一唱一和，高高低低，十分熱鬧！🎶');
   }
 
   spawnHeartsNear(pos) {
@@ -1921,21 +1918,19 @@ class GameEngine {
       this.catPos.y = this.getSurfaceHeight(this.catPos.x, this.catPos.z);
       this.cat.position.y = this.catPos.y;
       if (window.soundSystem) window.soundSystem.stopPurr();
-      this.showPrompt('🐱 小女生翻身站起，精神抖擻！🐾');
       return;
     }
 
     this.catState = 'sleep_belly_up';
     if (window.soundSystem) window.soundSystem.startPurr();
-    this.showPrompt('✨ 小女生四腳朝天躺平，露出白色小被子肚子！🥰 (移動或再按 B 可翻回站立)');
+    if (window.voiceSystem) window.voiceSystem.speak('belly');
   }
 
   callCat() {
     if (window.soundSystem) window.soundSystem.resume();
     if (window.voiceSystem) {
-      window.voiceSystem.speak('小女生——！快過來～', '小主人（大叫小女生）');
+      window.voiceSystem.speak('call');
     }
-    this.showPrompt('🗣️ 對著空中大叫：「小女生——！」');
 
     const isHappy = Math.random() > 0.35;
     setTimeout(() => {
@@ -1946,11 +1941,9 @@ class GameEngine {
           setTimeout(() => window.soundSystem.playRealMeow('response'), 750);
           setTimeout(() => window.soundSystem.playRealMeow('happy'), 1600);
         }
-        this.showPrompt('🐱 小女生邊走邊回應，一唱一和，輕快地跑向你！🥰');
       } else {
         this.setCatAIState('unhappy');
         if (window.soundSystem) window.soundSystem.playRealMeow('growl');
-        this.showPrompt('🐱 小女生安安靜靜走來，用雪亮大眼看著你：「到底什麼事啊？...」😾');
       }
     }, 800);
   }
@@ -2007,11 +2000,13 @@ class GameEngine {
                 window.soundSystem.playRealMeow('trill');
                 window.soundSystem.startPurr();
               }
+              if (window.voiceSystem) {
+                window.voiceSystem.speak('belly');
+              }
               if (window.curriculumSystem) {
                 window.curriculumSystem.G.hp = Math.min(100, window.curriculumSystem.G.hp + 20);
                 window.curriculumSystem.updateHUD();
               }
-              this.showPrompt('🐱 小女生在沙發座墊上四腳朝天，露出軟綿綿白肚子，舒服得呼嚕呼嚕！💖');
             }
           },
           {
@@ -2024,9 +2019,8 @@ class GameEngine {
               this.catState = 'rub_leg';
               if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
               if (window.voiceSystem) {
-                window.voiceSystem.speak('像個可愛的小孩，陪伴我和家人說話。', '小主人（摸摸頭）');
+                window.voiceSystem.speak('family');
               }
-              this.showPrompt('🐱 小女生把前腳輕輕搭在你的大腿上，輕輕的喵個不停！🥰');
             }
           },
           {
@@ -3209,12 +3203,8 @@ class GameEngine {
   }
 
   updateProximityCard() {
-    if (!this.proxCard || !this.player || !this.cat) return;
-
-    const dist = this.playerPos.distanceTo(this.catPos);
-    if (dist < 1.7) {
-      this.proxCard.classList.remove('hidden');
-    } else {
+    // 永不彈出大型中央靠近捷徑卡，因為下方操作列已有完整按鈕，保持手機畫面清爽無遮擋
+    if (this.proxCard) {
       this.proxCard.classList.add('hidden');
     }
   }

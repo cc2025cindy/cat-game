@@ -197,8 +197,13 @@ class CurriculumSystem {
       this.G.cleared.add(st.id);
       this.saveGame();
       this.G.mode = 'explore';
+      if (window.soundSystem && typeof window.soundSystem.playOwnerVoice === 'function') {
+        window.soundSystem.playOwnerVoice('praise');
+      }
       if (st.id + 1 < this.ST.length) {
         this.enterStation(st.id + 1);
+      } else {
+        this.promptCertificateName();
       }
     };
     modal.classList.add('active');
@@ -473,10 +478,10 @@ class CurriculumSystem {
       try {
         if (window.soundSystem) {
           if (typeof window.soundSystem.playSuccess === 'function') window.soundSystem.playSuccess();
-          if (typeof window.soundSystem.playRealMeow === 'function') {
-            window.soundSystem.playRealMeow('sweet');
-          } else if (typeof window.soundSystem.playMeowRandom === 'function') {
-            window.soundSystem.playMeowRandom('sweet');
+          if (typeof window.soundSystem.playOwnerVoice === 'function') {
+            window.soundSystem.playOwnerVoice('praise');
+          } else if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
+            window.voiceSystem.speak('praise');
           }
         }
       } catch (e) {
@@ -486,17 +491,20 @@ class CurriculumSystem {
       this.G.feathers.push(q.no);
       this.updateHUD();
 
+      const st = this.ST[this.G.station];
+      const isLastStep = !st || !st.steps || (this.currentStepIdx >= st.steps.length - 1);
+
       if (feedback) {
         feedback.className = 'quiz-feedback-box success';
         feedback.innerHTML = `
-          <div style="font-size:15px; font-weight:800; margin-bottom:6px;">🎉 太棒了！答對了！獲得 1 包小魚乾點心！</div>
-          <button class="btn-confirm next-q-btn" id="btn-next-step" onclick="curriculumSystem.nextQuestion()" style="margin-top:8px; width:100%; font-size:15px; padding:10px 18px; border-radius:12px; cursor:pointer;">繼續下一題 ➔</button>
+          <div style="font-size:15px; font-weight:800; margin-bottom:6px;">🎉 太棒了，答對囉！小女生好崇拜你！（獲得 1 包小魚乾點心）</div>
+          <button class="btn-confirm next-q-btn" id="btn-next-step" onclick="curriculumSystem.nextQuestion()" style="margin-top:8px; width:100%; font-size:15px; padding:10px 18px; border-radius:12px; cursor:pointer;">${isLastStep ? '完成本關挑戰 🎉' : '繼續下一題 ➔'}</button>
         `;
       }
 
       this._nextQTimer = setTimeout(() => {
         this.nextQuestion();
-      }, 1400);
+      }, 2400);
     } else {
       try {
         if (window.soundSystem) {
@@ -593,7 +601,9 @@ class CurriculumSystem {
       // 全通關！
       this.promptCertificateName();
     } else {
-      alert(`🎉 恭喜完成本站挑戰！小女生親暱地蹭了蹭你的大腿！`);
+      if (window.game && typeof window.game.showPrompt === 'function') {
+        window.game.showPrompt('🎉 恭喜完成本站挑戰！小女生親暱地蹭了蹭你的大腿！🐾');
+      }
       this.enterStation(this.G.station + 1);
     }
   }
