@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261027_7">
+  <link rel="stylesheet" href="css/style.css?v=20261027_8">
   <!-- Three.js 核心庫 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -39,6 +39,7 @@
         <button id="tCont" class="btn-primary-glow" style="display:none;" onclick="curriculumSystem.continueGame()">▶ 繼續冒險</button>
         <button id="tStart" class="btn-primary-glow" onclick="curriculumSystem.startNewGame()">🐾 開始探索（選擇視角）</button>
         <button id="tStages" class="btn-secondary" onclick="curriculumSystem.openStagesModal()">📖 關卡與章節一覽</button>
+        <button id="tQrcode" class="btn-secondary" style="background: #eff6ff; border-color: #60a5fa; color: #1d4ed8;" onclick="openQrModal()">📱 開啟 QR Code（學生掃碼）</button>
       </div>
       <div class="title-teacher-row">
         <input id="teacherPw" type="password" placeholder="請輸入教師密碼">
@@ -320,32 +321,29 @@
   </div>
 
   <!-- 手機遊玩 QR Code 彈窗 -->
-  <div class="modal-overlay" id="qrcode-modal">
-    <div class="modal-card" style="max-width: 440px; text-align: center;">
+  <div class="modal-overlay" id="qrcode-modal" style="z-index: 350;">
+    <div class="modal-card" style="max-width: 460px; text-align: center;">
       <button class="modal-close" onclick="closeQrModal()">✕</button>
-      <div style="font-size: 40px; margin-bottom: 8px;">📱🐱</div>
-      <h2 style="font-size: 22px; font-weight: 900; color: #ea580c; margin-bottom: 8px;">用手機 / 平板立即暢玩！</h2>
-      <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
-        拿起手機開啟相機鏡頭，掃描下方 QR Code 即可直接遊玩：
+      <div style="font-size: 38px; margin-bottom: 6px;">📱🐱</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #ea580c; margin-bottom: 6px;">學生手機／平板掃碼立即玩</h2>
+      <p style="font-size: 14px; color: #64748b; margin-bottom: 12px;">
+        請開啟相機或 QR Code 掃描器，對準下方條碼即可進入遊戲：
       </p>
-      <div style="background: white; padding: 14px; border-radius: 18px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 2px solid #fed7aa; margin-bottom: 16px;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://cc2025cindy.github.io/cat-game/" alt="手機遊玩 QR Code" style="width: 220px; height: 220px; display: block; border-radius: 8px;" />
+      <div style="background: white; padding: 16px; border-radius: 20px; display: inline-block; box-shadow: 0 6px 24px rgba(0,0,0,0.1); border: 3px solid #fdba74; margin-bottom: 10px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=https://cc2025cindy.github.io/cat-game/" alt="手機遊玩 QR Code" style="width: 240px; height: 240px; display: block; border-radius: 8px;" />
       </div>
-      <div style="background: #fff7ed; padding: 12px; border-radius: 12px; border: 1.5px solid #fed7aa; font-size: 13px; color: #9a3412; line-height: 1.6; margin-bottom: 16px; text-align: left;">
-        ✨ <b>手機觸控優化</b>：<br>
-        • 左下角<b>圓形類比搖桿 (#pad)</b>：推動幅度靈活對應行走速度<br>
-        • 畫面<b>單指滑動</b>：360° 自由旋轉視角、雙指縮放<br>
-        • 點擊<b>提示菱形</b>：即時聆聽小女生的課文對話與挑戰
+      <div style="font-size: 12px; color: #9a3412; font-weight: 700; margin-bottom: 14px;">
+        🔗 網址：https://cc2025cindy.github.io/cat-game/
       </div>
-      <button class="btn-confirm" onclick="closeQrModal()" style="width: 100%;">我知道了，繼續遊玩</button>
+      <button class="btn-confirm" onclick="closeQrModal()" style="width: 100%;">關閉 QR Code 視窗</button>
     </div>
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261027_7"></script>
-  <script src="js/audio.js?v=20261027_7"></script>
-  <script src="js/curriculum.js?v=20261027_7"></script>
-  <script src="js/game.js?v=20261027_7"></script>
+  <script src="js/stations.js?v=20261027_8"></script>
+  <script src="js/audio.js?v=20261027_8"></script>
+  <script src="js/curriculum.js?v=20261027_8"></script>
+  <script src="js/game.js?v=20261027_8"></script>
 
   <script>
     function selectRole(role) {

@@ -2546,98 +2546,71 @@ class GameEngine {
   }
 
   checkTouchCollisions(time) {
+    // 僅在正式探索模式 (explore) 且玩家正在主動操作小貓移動時，才偵測碰觸地面小玩具
     if (this.viewMode !== 'cat' || !this.cat) return;
+    if (!window.curriculumSystem || window.curriculumSystem.G.mode !== 'explore') return;
+    if (!this.isCatMoving) return;
+
     const catPos = this.catPos;
+    if (!this._touchZones) this._touchZones = {};
 
     // 1. 毛線球 (yarn, pos: 0.7, 0, -0.4)
     const dYarn = Math.hypot(catPos.x - 0.7, catPos.z - (-0.4));
-    if (dYarn < 0.48) {
+    if (dYarn < 0.42) {
       if (this.yarnBall) {
         this.yarnBall.rotation.x += 0.35;
         this.yarnBall.rotation.z += 0.25;
       }
-      if (!this._lastYarnTouch || time - this._lastYarnTouch > 2.5) {
+      if (!this._touchZones.yarn && (!this._lastYarnTouch || time - this._lastYarnTouch > 10.0)) {
+        this._touchZones.yarn = true;
         this._lastYarnTouch = time;
         if (window.soundSystem) window.soundSystem.playRealMeow('playful');
-        this.showPrompt('🧶 碰到了彩色毛線球！毛線骨碌碌滾動～💖');
         this.spawnHeartsNear(catPos);
       }
+    } else if (dYarn > 0.75) {
+      this._touchZones.yarn = false;
     }
 
     // 2. 發條小老鼠 (mouse, pos: 1.8, 0, 0.6)
     const dMouse = Math.hypot(catPos.x - 1.8, catPos.z - 0.6);
-    if (dMouse < 0.48) {
+    if (dMouse < 0.42) {
       if (this.toyMouse) {
         this.toyMouse.rotation.y += 0.4;
       }
-      if (!this._lastMouseTouch || time - this._lastMouseTouch > 2.5) {
+      if (!this._touchZones.mouse && (!this._lastMouseTouch || time - this._lastMouseTouch > 10.0)) {
+        this._touchZones.mouse = true;
         this._lastMouseTouch = time;
         if (window.soundSystem) window.soundSystem.playRealMeow('chatter');
-        this.showPrompt('🐭 碰到了發條小老鼠！老鼠受驚滴溜溜旋轉！✨');
         this.spawnHeartsNear(catPos);
       }
+    } else if (dMouse > 0.75) {
+      this._touchZones.mouse = false;
     }
 
     // 3. 點心餐盤 (bowl, pos: -2.8, 0, 0.8)
     const dBowl = Math.hypot(catPos.x - (-2.8), catPos.z - 0.8);
-    if (dBowl < 0.58) {
-      if (!this._lastBowlTouch || time - this._lastBowlTouch > 2.5) {
+    if (dBowl < 0.48) {
+      if (!this._touchZones.bowl && (!this._lastBowlTouch || time - this._lastBowlTouch > 10.0)) {
+        this._touchZones.bowl = true;
         this._lastBowlTouch = time;
         if (window.soundSystem) window.soundSystem.playRealMeow('hungry');
-        this.showPrompt('🍲 碰到了點心餐盤！聞到了香噴噴的小魚乾氣味～😋');
         this.spawnHeartsNear(catPos);
       }
+    } else if (dBowl > 0.85) {
+      this._touchZones.bowl = false;
     }
 
     // 4. 貓薄荷小魚玩偶 (fish, pos: -0.6, 0, -0.3)
     const dFish = Math.hypot(catPos.x - (-0.6), catPos.z - (-0.3));
-    if (dFish < 0.45) {
-      if (!this._lastFishTouch || time - this._lastFishTouch > 2.5) {
+    if (dFish < 0.40) {
+      if (!this._touchZones.fish && (!this._lastFishTouch || time - this._lastFishTouch > 10.0)) {
+        this._touchZones.fish = true;
         this._lastFishTouch = time;
         if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
-        this.showPrompt('🐟 蹭了蹭貓薄荷小魚玩偶，發出舒服呢喃～🥰');
         this.spawnHeartsNear(catPos);
       }
-    }
-
-    // 5. 浴室洗手間門口 (door, pos: -4.4, 0, -2.2)
-    const dDoor = Math.hypot(catPos.x - (-4.4), catPos.z - (-2.2));
-    if (dDoor < 0.85) {
-      if (!this._lastDoorTouch || time - this._lastDoorTouch > 3.0) {
-        this._lastDoorTouch = time;
-        if (window.soundSystem) window.soundSystem.playRealMeow('calling');
-        this.showPrompt('🚪 靠近了洗手間門口！小女生發出深情呼喚：「喵——！」');
-      }
-    }
-
-    // 6. 陽台明亮落地窗 (window, pos: 4.0, 0, -3.85)
-    const dWin = Math.hypot(catPos.x - 4.0, catPos.z - (-3.85));
-    if (dWin < 0.9) {
-      if (!this._lastWinTouch || time - this._lastWinTouch > 3.0) {
-        this._lastWinTouch = time;
-        if (window.soundSystem) window.soundSystem.playRealMeow('chatter');
-        this.showPrompt('🪟 望向明亮落地窗！窗外蝴蝶翩翩飛舞，小女生雀躍顫鳴！✨');
-      }
-    }
-
-    // 7. 貓跳台樂園 (cattree, pos: 2.8, 0, -2.5)
-    const dTree = Math.hypot(catPos.x - 2.8, catPos.z - (-2.5));
-    if (dTree < 0.85 && this.catPos.y < 0.4) {
-      if (!this._lastTreeTouch || time - this._lastTreeTouch > 3.0) {
-        this._lastTreeTouch = time;
-        if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
-        this.showPrompt('🪜 靠近了貓跳台樂園！點選【爬貓跳台】即可一躍攀登！');
-      }
-    }
-
-    // 8. 溫馨沙發 (sofa, pos: 0.7, 0, 1.35)
-    const dSofa = Math.hypot(catPos.x - 0.7, catPos.z - 1.35);
-    if (dSofa < 0.85) {
-      if (!this._lastSofaTouch || time - this._lastSofaTouch > 3.0) {
-        this._lastSofaTouch = time;
-        if (window.soundSystem) window.soundSystem.playRealMeow('happy');
-        this.showPrompt('🛋️ 靠近了溫馨沙發！點選【客廳沙發】或靠近即可跳上小被子放鬆！');
-      }
+    } else if (dFish > 0.75) {
+      this._touchZones.fish = false;
     }
   }
 
@@ -2743,6 +2716,7 @@ class GameEngine {
 
     const inputLen = Math.hypot(inputRight, inputForward);
     const isMoving = inputLen > 0.01;
+    this.isCatMoving = isMoving;
 
     if (isMoving) {
       if (this.catState === 'sleep_belly_up') {
@@ -2881,6 +2855,7 @@ class GameEngine {
 
     const inputLen = Math.hypot(inputRight, inputForward);
     const isMoving = inputLen > 0.01;
+    this.isCatMoving = isMoving;
 
     if (isMoving) {
       const forwardX = -Math.sin(this.cameraYaw);
