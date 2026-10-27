@@ -2527,6 +2527,47 @@ class GameEngine {
 
       return { spot, bubble, aura: auraGroup };
     });
+
+    // 建立當前關卡專屬 3D 導引光柱地標 (Quest Beacon)
+    this.questBeacon = new THREE.Group();
+    const qRingGeo = new THREE.RingGeometry(0.32, 0.52, 36);
+    const qRingMat = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false
+    });
+    this.questBeaconRing = new THREE.Mesh(qRingGeo, qRingMat);
+    this.questBeaconRing.rotation.x = -Math.PI / 2;
+    this.questBeaconRing.position.y = 0.03;
+    this.questBeacon.add(this.questBeaconRing);
+
+    const qBeamGeo = new THREE.CylinderGeometry(0.22, 0.36, 1.8, 24, 1, true);
+    const qBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x34d399,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false
+    });
+    this.questBeaconBeam = new THREE.Mesh(qBeamGeo, qBeamMat);
+    this.questBeaconBeam.position.y = 0.9;
+    this.questBeacon.add(this.questBeaconBeam);
+
+    const qStarGeo = new THREE.OctahedronGeometry(0.20, 0);
+    const qStarMat = new THREE.MeshStandardMaterial({
+      color: 0x6ee7b7,
+      emissive: 0x059669,
+      emissiveIntensity: 1.2,
+      roughness: 0.15,
+      metalness: 0.4
+    });
+    this.questBeaconStar = new THREE.Mesh(qStarGeo, qStarMat);
+    this.questBeaconStar.position.y = 0.55;
+    this.questBeacon.add(this.questBeaconStar);
+
+    this.scene.add(this.questBeacon);
   }
 
   interactWithNearby() {
@@ -3173,6 +3214,60 @@ class GameEngine {
       if (dockBtn) dockBtn.classList.remove('highlight-item-btn');
       if (dockIcon) dockIcon.textContent = '🛋️';
       if (dockLabel) dockLabel.textContent = '沙發互動';
+    }
+
+    // 5. 更新當前關卡 3D 光柱地標 (Quest Beacon) 與 2D 浮動路標 (#quest-3d-marker)
+    const qMarker = document.getElementById('quest-3d-marker');
+    const cs = window.curriculumSystem;
+    if (cs && cs.ST && cs.ST[cs.G.station]) {
+      const st = cs.ST[cs.G.station];
+      const tPos = (typeof st.target === 'function') ? st.target() : new THREE.Vector3(0, 0.3, 0);
+
+      if (this.questBeacon) {
+        this.questBeacon.visible = (cs.G.mode === 'explore');
+        this.questBeacon.position.set(tPos.x, 0, tPos.z);
+        if (this.questBeaconStar) {
+          this.questBeaconStar.rotation.y = time * 2.8;
+          this.questBeaconStar.position.y = Math.max(0.45, tPos.y + 0.25) + Math.sin(time * 4) * 0.08;
+        }
+        if (this.questBeaconRing) {
+          const s = 1.0 + Math.sin(time * 4.5) * 0.18;
+          this.questBeaconRing.scale.set(s, s, 1);
+          this.questBeaconRing.position.y = (tPos.y > 0.45 ? tPos.y - 0.01 : 0.03);
+        }
+      }
+
+      if (qMarker) {
+        if (cs.G.mode === 'explore' && st.kind !== 'story') {
+          tempV.set(tPos.x, Math.max(0.65, tPos.y + 0.55), tPos.z);
+          tempV.project(this.camera);
+
+          let sx = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+          let sy = (-tempV.y * 0.5 + 0.5) * window.innerHeight;
+          if (tempV.z > 1) {
+            sx = window.innerWidth - sx;
+            sy = window.innerHeight - 95;
+          }
+          // 保持在畫面可視範圍內，就算視角轉開也能在邊緣看到關卡方向並直接點擊作答
+          sx = Math.max(95, Math.min(window.innerWidth - 95, sx));
+          sy = Math.max(66, Math.min(window.innerHeight - 92, sy));
+
+          qMarker.style.display = 'inline-flex';
+          qMarker.style.left = `${sx}px`;
+          qMarker.style.top = `${sy}px`;
+
+          // 若玩家主動走進關卡光柱範圍 (< 0.88m)，自動彈出本關課文與題目挑戰！
+          const distToQuest = Math.hypot(currentHeroPos.x - tPos.x, currentHeroPos.z - tPos.z);
+          if (distToQuest < 0.88 && this.isCatMoving && this._autoOpenedStation !== cs.G.station) {
+            this._autoOpenedStation = cs.G.station;
+            cs.promptInteract();
+          } else if (distToQuest > 1.35 && this._autoOpenedStation === cs.G.station) {
+            this._autoOpenedStation = -1;
+          }
+        } else {
+          qMarker.style.display = 'none';
+        }
+      }
     }
   }
 

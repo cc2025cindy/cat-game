@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261027_8">
+  <link rel="stylesheet" href="css/style.css?v=20261027_10">
   <!-- Three.js 核心庫 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -132,13 +132,19 @@
 
     <!-- 任務橫幅與提示菱形群組 (獨立左側直向排版，絕不遮擋頂部標題) -->
     <div id="mission-hud-group" class="mission-hud-group">
-      <div id="quest-banner" class="quest-banner">
+      <div id="quest-banner" class="quest-banner" onclick="window.__bird && window.__bird.interact()" style="cursor:pointer;">
         <div id="quest-title" class="quest-title">走向洗手間門口</div>
         <div id="quest-desc" class="quest-desc">觀察小女生在門外的舉動</div>
       </div>
       <div id="prompt-diamond" class="prompt-diamond" onclick="window.__bird && window.__bird.interact()">
-        <span id="prompt-text">聆聽門外的喵喵叫</span>
+        <span id="prompt-text">📝 點此開始本關作答</span>
       </div>
+    </div>
+
+    <!-- 3D 場景中的關卡地標浮動指引牌 (點擊或走近皆可觸發作答) -->
+    <div id="quest-3d-marker" class="quest-3d-marker" onclick="window.__bird && window.__bird.interact()">
+      <span class="quest-marker-badge">📝 關卡挑戰</span>
+      <span id="quest-marker-label">第 1 站：點此作答</span>
     </div>
 
     <!-- 活動邊界 Toast (已停用並永久隱藏，保持視線清爽) -->
@@ -173,6 +179,10 @@
       </div>
 
       <div class="action-dock" id="action-dock">
+        <button class="dock-btn quiz-go-btn" id="btn-start-quiz" onclick="window.__bird && window.__bird.interact()">
+          <span class="btn-icon">📝</span>
+          <span id="btn-quiz-dock-label">本關作答</span>
+        </button>
         <button class="dock-btn primary" id="btn-primary-action" onclick="window.__bird && window.__bird.interact()">
           <span class="btn-icon">🗣️</span>
           <span id="btn-primary-label">與貓對話</span>
@@ -340,10 +350,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261027_9"></script>
-  <script src="js/audio.js?v=20261027_9"></script>
-  <script src="js/curriculum.js?v=20261027_9"></script>
-  <script src="js/game.js?v=20261027_9"></script>
+  <script src="js/stations.js?v=20261027_10"></script>
+  <script src="js/audio.js?v=20261027_10"></script>
+  <script src="js/curriculum.js?v=20261027_10"></script>
+  <script src="js/game.js?v=20261027_10"></script>
 
   <script>
     function selectRole(role) {

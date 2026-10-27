@@ -28,7 +28,7 @@ window.ST = [
     obj: '觀察小女生在門外的舉動',
     prompt: '聆聽門外的喵喵叫',
     area: { x0: -15, x1: 15, z0: -15, z1: 15 },
-    target: () => new THREE.Vector3(-4.5, 0.3, -2.5),
+    target: () => new THREE.Vector3(-3.6, 0.3, -1.8),
     steps: [
       {
         no: 1,
@@ -219,7 +219,7 @@ window.ST = [
     para: '第三段',
     text: '平時，牠喜歡四腳朝天的躺在沙發上，毛茸茸的肚子，看起來像蓋上了一條白色小被子。',
     env: 'warm',
-    target: () => new THREE.Vector3(0, 0.6, 2.2)
+    target: () => new THREE.Vector3(0.7, 0.6, 1.35)
   },
   {
     id: 7,
@@ -230,7 +230,7 @@ window.ST = [
     quest: '走到客廳沙發旁',
     obj: '伸出手撫摸柔細的毛與圓胖肚子',
     prompt: '摸摸柔細的毛',
-    target: () => new THREE.Vector3(0.5, 0.6, 2.2),
+    target: () => new THREE.Vector3(0.5, 0.6, 1.35),
     steps: [
       {
         no: 13,
@@ -272,7 +272,7 @@ window.ST = [
     quest: '坐在沙發上',
     obj: '迎接把前腳搭在腿上的小女生',
     prompt: '感受膝上的溫暖',
-    target: () => new THREE.Vector3(-0.4, 0.6, 2.2),
+    target: () => new THREE.Vector3(-0.3, 0.6, 1.35),
     steps: [
       {
         no: 16,

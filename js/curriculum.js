@@ -850,12 +850,18 @@ class CurriculumSystem {
     const st = this.ST[this.G.station];
     if (st) {
       const qTitle = document.getElementById('quest-title');
-      if (qTitle) qTitle.innerText = st.quest || st.name;
+      if (qTitle) qTitle.innerText = `📍 第 ${this.G.station} 站：${st.quest || st.name}`;
       const qDesc = document.getElementById('quest-desc');
       if (qDesc) qDesc.innerText = st.obj || st.para;
 
       const pTxt = document.getElementById('prompt-text');
-      if (pTxt) pTxt.innerText = st.prompt || '靠近觀察';
+      if (pTxt) pTxt.innerText = `📝 點此作答：${st.prompt || st.name} ▶`;
+
+      const mLbl = document.getElementById('quest-marker-label');
+      if (mLbl) mLbl.innerText = `${st.quest || st.name}（點此作答）`;
+
+      const dockQuizLbl = document.getElementById('btn-quiz-dock-label');
+      if (dockQuizLbl) dockQuizLbl.innerText = `第${this.G.station}站作答`;
     }
   }
 
