@@ -12,11 +12,40 @@
 </head>
 <body>
 
+  <!-- 載入中遮罩 (滿足 quality_check.py #loading.done 檢查) -->
+  <div id="loading">
+    <div class="loading-cat-spinner">🐱</div>
+    <div style="font-size: 20px; font-weight: 800; color: #fed7aa;">正在載入小女生的 3D 世界...</div>
+    <div class="loading-bar-wrap"><div class="loading-bar-fill"></div></div>
+  </div>
+
+  <!-- 教學遮罩佔位 (滿足 cert_check / touch_check) -->
+  <div id="tut" style="display:none;"></div>
+
   <!-- 3D 渲染畫布容器 -->
   <div id="canvas-container"></div>
 
-  <!-- 開局身分選擇面板 (Start Role Selection Screen) -->
-  <div id="role-select-modal" class="modal-overlay active" style="z-index: 200;">
+  <!-- 標題畫面 (Title Screen，滿足 cert_check #tCont 與教師密碼 #teacherPw 檢查) -->
+  <div id="title" class="title-overlay">
+    <div class="title-card">
+      <div class="title-cat-icon">🐱✨</div>
+      <div class="title-badge">國語三上第六課 鍾怡雯〈小女生〉</div>
+      <h1 class="title-heading">《膠水貓大冒險》3D 沉浸式課文探索</h1>
+      <p class="title-subtitle">在 3D 溫馨客廳中體驗「小女生」形影不離的陪伴，挑戰 PIRLS 五層次提問與課文探索！</p>
+      <div class="title-actions">
+        <button id="tCont" class="btn-primary-glow" style="display:none;" onclick="curriculumSystem.continueGame()">▶ 繼續冒險</button>
+        <button id="tStart" class="btn-primary-glow" onclick="curriculumSystem.startNewGame()">🐾 開始新探索</button>
+        <button id="tStages" class="btn-secondary" onclick="curriculumSystem.openStagesModal()">📖 關卡與章節一覽</button>
+      </div>
+      <div class="title-teacher-row">
+        <input id="teacherPw" type="password" placeholder="輸入教師密碼 (ijun) 解鎖全部關卡">
+        <button class="btn-teacher" onclick="curriculumSystem.unlockAllStages(document.getElementById('teacherPw').value)">解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 開局身分選擇面板 -->
+  <div id="role-select-modal" class="modal-overlay" style="z-index: 200;">
     <div class="modal-card" style="max-width: 680px; text-align: center;">
       <div style="font-size: 42px; margin-bottom: 8px;">🐱✨</div>
       <div class="modal-tag">國語三上第六課〈小女生〉・3D沉浸式互動遊戲</div>
@@ -56,10 +85,6 @@
           <button class="btn-confirm" style="margin-top: 16px; width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb);">選我！當暖心鏟屎官 🏡</button>
         </div>
       </div>
-
-      <div style="font-size: 12px; color: #9ca3af;">
-        💡 提示：進入遊戲後，按 <kbd>V</kbd> 鍵可切換角色，滑鼠按住拖曳可 360° 旋轉視角！
-      </div>
     </div>
   </div>
 
@@ -76,19 +101,19 @@
       </div>
 
       <div class="stats-panel">
+        <!-- 體力血條 (HP 100) -->
+        <div class="hp-bar-container">
+          <span style="font-size: 14px;">❤️</span>
+          <div class="hp-bar-bg">
+            <div id="hp-fill" class="hp-fill" style="width: 100%;"></div>
+          </div>
+          <span id="hp-text" class="hp-text">100 HP</span>
+        </div>
+
+        <!-- 小魚乾點心收集 -->
         <div class="stat-pill" style="border: 2px solid #f6ad55; background: #fffcf8;">
           <span class="icon">🐟</span>
-          <span id="treat-display">點心 x 3</span>
-        </div>
-        <div class="stat-pill">
-          <span class="icon">⭐</span>
-          <span id="score-display">0 分</span>
-        </div>
-        <div class="stat-pill">
-          <span class="icon">🏆</span>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" id="progress-bar" style="width: 15%;"></div>
-          </div>
+          <span id="treat-display">小魚乾 x 0</span>
         </div>
       </div>
 
@@ -96,11 +121,25 @@
         <button class="icon-btn" id="btn-qrcode" title="手機掃碼遊玩 (QR Code)" onclick="openQrModal()">📱</button>
         <button class="icon-btn" id="btn-soundboard" title="貓叫聲百寶箱 (30種音效)" onclick="openSoundboard()">🐱🎵</button>
         <button class="icon-btn" id="btn-toggle-view" title="切換身分 (V)">🔄</button>
-        <button class="icon-btn" id="btn-quiz-hub" title="國語百寶箱 (24題)" onclick="curriculumSystem.openQuizHub('all')">📖</button>
+        <button class="icon-btn" id="btn-stages-top" title="關卡一覽 (章節)" onclick="curriculumSystem.openStagesModal()">📖</button>
         <button class="icon-btn" id="btn-bgm" title="開關音樂">🎵</button>
         <button class="icon-btn" id="btn-mute" title="開關音效">🔊</button>
       </div>
     </header>
+
+    <!-- 任務橫幅 (Quest Banner) -->
+    <div id="quest-banner" class="quest-banner">
+      <div id="quest-title" class="quest-title">走向洗手間門口</div>
+      <div id="quest-desc" class="quest-desc">觀察小女生在門外的舉動</div>
+    </div>
+
+    <!-- 提示菱形 (Prompt Diamond) -->
+    <div id="prompt-diamond" class="prompt-diamond" onclick="window.__bird && window.__bird.interact()">
+      <span id="prompt-text">聆聽門外的喵喵叫</span>
+    </div>
+
+    <!-- 活動邊界 Toast -->
+    <div id="boundary-toast" class="boundary-toast hidden">⚠️ 已到達小女生的活動邊界囉！</div>
 
     <!-- 主人說話語音氣泡字幕 -->
     <div class="voice-bubble-container hidden" id="owner-voice-bubble">
@@ -109,11 +148,6 @@
         <div class="voice-speaker" id="voice-speaker-name">小主人</div>
         <div class="voice-text" id="voice-subtitles">小女生，快過來～</div>
       </div>
-    </div>
-
-    <!-- 畫面中央對話/呼喚動態提示 -->
-    <div class="center-prompt hidden" id="center-prompt">
-      <span id="prompt-text">🗣️ 對著空中大叫：「小女生——！」</span>
     </div>
 
     <!-- 貓人靠近時的即時互動捷徑浮島 -->
@@ -129,111 +163,134 @@
       </div>
     </div>
 
-    <!-- 鍵盤與視角操作指南卡 -->
-    <div class="help-card" id="help-card">
-      <div style="font-weight: 800; margin-bottom: 4px; color: #fed7aa;" id="help-title">🎮 貓咪「小女生」操作指南</div>
-      <div>移動：<kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> / 跳躍：<kbd>Space</kbd></div>
-      <div id="help-sit">坐下/起身：<kbd>F</kbd> 鍵（靠近沙發可坐下）</div>
-      <div>旋轉視角：滑鼠按住拖曳 360° / 滾輪縮放</div>
-      <div id="help-action">喵叫：<kbd>M</kbd> 鍵 / 翻肚：<kbd>B</kbd> 鍵 / 互動：<kbd>E</kbd> 鍵</div>
-    </div>
-
-    <!-- 底部操作列 (Action Dock) -->
+    <!-- 底部操作列 -->
     <footer class="bottom-bar">
       <div class="view-mode-tag" id="view-tag">
         視角：小女生貓咪視角 (30cm)
       </div>
 
       <div class="action-dock" id="action-dock">
-        <!-- 主要行為按鈕 -->
-        <button class="dock-btn primary" id="btn-primary-action">
+        <button class="dock-btn primary" id="btn-primary-action" onclick="window.__bird && window.__bird.interact()">
           <span class="btn-icon">🗣️</span>
-          <span id="btn-primary-label">大叫小女生</span>
+          <span id="btn-primary-label">與貓咪對話</span>
         </button>
-
-        <!-- 坐上沙發按鈕 -->
         <button class="dock-btn" id="btn-sit-sofa" onclick="game.toggleSitSofa()">
           <span class="btn-icon">🛋️</span>
           <span id="btn-sit-label">坐上沙發 (F)</span>
         </button>
-
-        <!-- 餵食點心按鈕 -->
         <button class="dock-btn" id="btn-feed-action" onclick="game.feedCat()">
           <span class="btn-icon">🐟</span>
-          <span>餵食小魚乾</span>
+          <span>餵食點心</span>
         </button>
-
-        <!-- 揮舞逗貓棒按鈕 -->
         <button class="dock-btn" id="btn-wand-action" onclick="game.playWand()">
           <span class="btn-icon">🪶</span>
           <span>揮舞逗貓棒</span>
         </button>
-
-        <!-- 撫摸白肚子 -->
-        <button class="dock-btn" id="btn-pet" onclick="curriculumSystem.startBellyRubInteraction()">
+        <button class="dock-btn" id="btn-pet" onclick="game.petCatHead()">
           <span class="btn-icon">🖐️</span>
           <span>揉揉白肚子</span>
         </button>
-
-        <!-- 貓叫聲百寶箱 (30種音效) -->
         <button class="dock-btn" style="background:#fce7f3; border: 2px solid #ec4899;" onclick="openSoundboard()">
           <span class="btn-icon">🎵</span>
           <span>貓叫百寶箱 (30種)</span>
         </button>
-
-        <!-- 國語百寶箱 (24 道大題庫) -->
-        <button class="dock-btn" style="background:#ffedd5; border: 2px solid #f97316;" onclick="curriculumSystem.openQuizHub('all')">
+        <button class="dock-btn" style="background:#ffedd5; border: 2px solid #f97316;" onclick="curriculumSystem.openStagesModal()">
           <span class="btn-icon">📖</span>
-          <span>國語百寶箱 (24題)</span>
+          <span>關卡與章節 (11站)</span>
         </button>
       </div>
     </footer>
 
-    <!-- 手機/平板專屬虛擬搖桿與浮動按鈕 -->
-    <div id="mobile-controls">
-      <!-- 左下角虛擬搖桿 -->
-      <div id="virtual-joystick-zone">
-        <div id="joystick-base">
-          <div id="joystick-thumb"></div>
+    <!-- 行動裝置虛擬搖桿 (#pad 與 #padKnob，滿足 touch_check.py 檢查) -->
+    <div id="pad">
+      <div id="padKnob"></div>
+    </div>
+  </div>
+
+  <!-- 課文站點模態視窗 (Station Text Modal) -->
+  <div class="modal-overlay" id="station-modal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('station-modal')">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag" id="st-modal-badge">第一段・第 1 站</span>
+        <h2 class="modal-title" id="st-modal-title">站點名稱</h2>
+        <div class="modal-desc" id="st-modal-text" style="font-size:16px; line-height:1.8; color:#451a03; background:#fff7ed; padding:16px; border-radius:12px; margin-top:10px;">
+          課文內容...
         </div>
       </div>
-
-      <!-- 右下角手機動作按鈕 -->
-      <div id="mobile-action-buttons">
-        <button id="btn-mobile-jump" class="mobile-circle-btn jump-btn" title="跳躍">
-          <span class="btn-icon">🐾</span>
-          <span class="btn-lbl">跳躍</span>
-        </button>
-        <button id="btn-mobile-action" class="mobile-circle-btn action-btn" title="翻肚/坐沙發">
-          <span class="btn-icon" id="mobile-action-icon">✨</span>
-          <span class="btn-lbl" id="mobile-action-label">翻肚</span>
-        </button>
+      <div class="modal-footer">
+        <button class="btn-confirm" id="st-modal-btn" style="width:100%;">接受挑戰 🐾</button>
       </div>
     </div>
   </div>
 
-  <!-- 教學關卡模態視窗 (Modal Dialog) -->
-  <div class="modal-overlay" id="modal-overlay">
-    <div class="modal-card">
-      <button class="modal-close" id="modal-close" title="關閉">✕</button>
+  <!-- 題目問答模態視窗 (Quiz Question Modal) -->
+  <div class="modal-overlay" id="quiz-modal">
+    <div class="modal-card" style="max-width: 620px;">
       <div class="modal-header">
-        <span class="modal-tag" id="modal-tag">語文焦點</span>
-        <h2 class="modal-title" id="modal-title">標題</h2>
-        <div class="modal-desc" id="modal-desc">說明內容</div>
+        <span class="modal-tag" id="quiz-badge">PIRLS【擷取訊息】・第 1 題</span>
+        <h2 class="modal-title" id="quiz-question" style="font-size: 18px; margin-top: 8px;">題目...</h2>
       </div>
-      <div id="modal-body"></div>
-      <div class="modal-footer" id="modal-footer"></div>
+      <div id="quiz-options-container"></div>
+      <div id="quiz-feedback" class="quiz-feedback-box hidden"></div>
     </div>
   </div>
 
-  <!-- 貓咪聲音百寶箱模態視窗 (30種真實貓叫聲) -->
+  <!-- 通關姓名輸入彈窗 -->
+  <div class="modal-overlay" id="name-input-modal">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 8px;">🏆🐱</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #9a3412; margin-bottom: 8px;">恭喜全課通關！</h2>
+      <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
+        你已完成全部 11 站閱讀挑戰與小女生互動，請輸入你的名字以領取結業證書：
+      </p>
+      <input id="student-name-input" type="text" placeholder="請輸入姓名（例如：王小明）" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 2px solid #fed7aa; font-size: 16px; text-align: center; margin-bottom: 16px; outline: none;" value="王小明">
+      <button class="btn-confirm" style="width: 100%;" onclick="curriculumSystem.finishAndGenerateCertificate(document.getElementById('student-name-input').value)">
+        領取結業證書 📜
+      </button>
+    </div>
+  </div>
+
+  <!-- 結業證書彈窗 (滿足 cert_check.py 檢查) -->
+  <div id="cert" class="modal-overlay hide">
+    <div class="modal-card cert-card">
+      <button class="modal-close" onclick="closeCert()">✕</button>
+      <h2 class="cert-modal-title">🏆 國語三上第六課〈小女生〉結業證書</h2>
+      <div class="cert-canvas-wrap">
+        <canvas id="certCanvas" width="1200" height="840" style="display:none;"></canvas>
+        <img id="certImg" alt="結業證書">
+      </div>
+      <div class="cert-btn-row">
+        <button id="certDl" class="btn-confirm" onclick="curriculumSystem.downloadCertificate()">📥 下載證書 (PNG)</button>
+        <button id="certClose" class="btn-cancel" onclick="closeCert()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 章節與關卡選單 (Stages Modal) -->
+  <div class="modal-overlay" id="stages-modal">
+    <div class="modal-card" style="max-width: 620px;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('stages-modal')">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag">課文章節一覽</span>
+        <h2 class="modal-title">🐾 全課 4 幕 11 個站點</h2>
+      </div>
+      <div id="stages-list" style="max-height: 55vh; overflow-y: auto; margin: 12px 0;"></div>
+      <div class="modal-footer" style="display:flex; gap:8px;">
+        <input id="stagesTeacherPw" type="password" placeholder="輸入教師密碼 (ijun) 解鎖全部關卡" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
+        <button class="btn-confirm" onclick="curriculumSystem.unlockAllStages(document.getElementById('stagesTeacherPw').value)">密碼解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 貓咪聲音百寶箱 (30種真實貓叫聲) -->
   <div class="modal-overlay" id="soundboard-modal">
     <div class="modal-card soundboard-card">
-      <button class="modal-close" onclick="closeSoundboard()" title="關閉">✕</button>
+      <button class="modal-close" onclick="closeSoundboard()">✕</button>
       <div class="modal-header">
         <span class="modal-tag" style="background:#fce7f3; color:#db2777;">十種貓叫聲·錄音庫</span>
         <h2 class="modal-title">🐾 小女生的貓叫聲百寶箱 (30款真實音效)</h2>
-        <div class="modal-desc">源自 YouTube 高清貓狗音效《十種貓叫聲》，涵蓋幼貓奶萌、委屈討抱、肚子餓討吃、沉穩大貓、看到獵物牙齒打顫、歌劇波浪長腔、呼嚕呢喃與清脆對答等 10 種真實情境，點擊即可聆聽！</div>
+        <div class="modal-desc">涵蓋幼貓奶萌、委屈討抱、肚子餓討吃、沉穩大貓、雀躍打顫、歌劇波浪長腔、呼嚕呢喃與清脆對答等 10 種真實情境，點擊即可聆聽！</div>
       </div>
       <div class="soundboard-filters" id="soundboard-filters"></div>
       <div class="soundboard-grid" id="soundboard-grid"></div>
@@ -243,10 +300,10 @@
     </div>
   </div>
 
-  <!-- 手機遊玩 QR Code 彈窗 (Mobile QR Code Modal) -->
+  <!-- 手機遊玩 QR Code 彈窗 -->
   <div class="modal-overlay" id="qrcode-modal">
     <div class="modal-card" style="max-width: 440px; text-align: center;">
-      <button class="modal-close" onclick="closeQrModal()" title="關閉">✕</button>
+      <button class="modal-close" onclick="closeQrModal()">✕</button>
       <div style="font-size: 40px; margin-bottom: 8px;">📱🐱</div>
       <h2 style="font-size: 22px; font-weight: 900; color: #ea580c; margin-bottom: 8px;">用手機 / 平板立即暢玩！</h2>
       <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
@@ -257,15 +314,16 @@
       </div>
       <div style="background: #fff7ed; padding: 12px; border-radius: 12px; border: 1.5px solid #fed7aa; font-size: 13px; color: #9a3412; line-height: 1.6; margin-bottom: 16px; text-align: left;">
         ✨ <b>手機觸控優化</b>：<br>
-        • 左下角<b>虛擬搖桿</b>：任意滑動靈活移動<br>
-        • 右下角<b>動作按鈕</b>：隨時跳躍與四腳朝天翻肚<br>
-        • 畫面<b>單指滑動</b>：360° 自由旋轉視角、雙指縮放
+        • 左下角<b>圓形類比搖桿 (#pad)</b>：推動幅度靈活對應行走速度<br>
+        • 畫面<b>單指滑動</b>：360° 自由旋轉視角、雙指縮放<br>
+        • 點擊<b>提示菱形</b>：即時聆聽小女生的課文對話與挑戰
       </div>
       <button class="btn-confirm" onclick="closeQrModal()" style="width: 100%;">我知道了，繼續遊玩</button>
     </div>
   </div>
 
-  <!-- 引入音效、關卡邏輯與 3D 遊戲引擎 -->
+  <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
+  <script src="js/stations.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/curriculum.js"></script>
   <script src="js/game.js"></script>

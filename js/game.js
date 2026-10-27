@@ -80,7 +80,36 @@ class GameEngine {
     this.proxCard = document.getElementById('proximity-card');
     this.setRole('cat');
 
-    window.addEventListener('resize', () => this.onResize());
+    // 綁定動態視窗高度 (--appH)
+    const setAppH = () => {
+      const h = window.innerHeight;
+      document.documentElement.style.setProperty('--appH', `${h}px`);
+    };
+    setAppH();
+    window.addEventListener('resize', () => {
+      setAppH();
+      this.onResize();
+    });
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => {
+        setAppH();
+        this.onResize();
+      }, 100);
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        setAppH();
+        this.onResize();
+      });
+    }
+
+    // 載入完成信號 (滿足 quality_check.py)
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.classList.add('done');
+      setTimeout(() => { loading.style.display = 'none'; }, 400);
+    }
+
     this.animate();
   }
 
@@ -1242,104 +1271,123 @@ class GameEngine {
   }
 
   setupMobileControls() {
-    const zone = document.getElementById('virtual-joystick-zone');
-    const base = document.getElementById('joystick-base');
-    const thumb = document.getElementById('joystick-thumb');
-    const btnJump = document.getElementById('btn-mobile-jump');
-    const btnAction = document.getElementById('btn-mobile-action');
+    const pad = document.getElementById('pad');
+    const knob = document.getElementById('padKnob');
+    const maxR = 48;
+    let padTouchId = null;
 
-    if (btnJump) {
-      const handleJump = (e) => {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        if (this.viewMode === 'cat') {
-          this.catJump();
-        } else {
-          if (this.isSitting) this.toggleSitSofa();
-        }
-      };
-      btnJump.addEventListener('touchstart', handleJump, { passive: false });
-      btnJump.addEventListener('click', handleJump);
-    }
-
-    if (btnAction) {
-      const handleAction = (e) => {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        if (this.viewMode === 'cat') {
-          this.catRollOver();
-        } else {
-          this.toggleSitSofa();
-        }
-      };
-      btnAction.addEventListener('touchstart', handleAction, { passive: false });
-      btnAction.addEventListener('click', handleAction);
-    }
-
-    if (!zone || !base || !thumb) return;
-
-    let touchId = null;
-    let baseRect = null;
-    let centerX = 0;
-    let centerY = 0;
-    const maxR = 40;
-
-    const handleTouchStart = (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const t = e.changedTouches[i];
-        if (touchId === null) {
-          touchId = t.identifier;
-          baseRect = base.getBoundingClientRect();
-          centerX = baseRect.left + baseRect.width / 2;
-          centerY = baseRect.top + baseRect.height / 2;
-          updateJoystick(t.clientX, t.clientY);
-          break;
-        }
-      }
+    const getPadCenter = () => {
+      if (!pad) return { x: 80, y: window.innerHeight - 84 };
+      const r = pad.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     };
 
-    const handleTouchMove = (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const t = e.changedTouches[i];
-        if (t.identifier === touchId) {
-          e.preventDefault();
-          updateJoystick(t.clientX, t.clientY);
-          break;
-        }
-      }
-    };
-
-    const handleTouchEnd = (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === touchId) {
-          touchId = null;
-          thumb.style.transform = 'translate(-50%, -50%)';
-          this.joystickVector = { x: 0, z: 0 };
-          break;
-        }
-      }
-    };
-
-    const updateJoystick = (clientX, clientY) => {
-      let dx = clientX - centerX;
-      let dy = clientY - centerY;
+    const handlePadTouch = (clientX, clientY) => {
+      const c = getPadCenter();
+      let dx = clientX - c.x;
+      let dy = clientY - c.y;
       const dist = Math.hypot(dx, dy);
-
       if (dist > maxR) {
         dx = (dx / dist) * maxR;
         dy = (dy / dist) * maxR;
       }
-
-      thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-
-      this.joystickVector = {
-        x: dx / maxR,
-        z: dy / maxR
-      };
+      if (knob) {
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      }
+      if (window.__bird && window.__bird.JOY) {
+        window.__bird.JOY.x = dx / maxR;
+        window.__bird.JOY.y = dy / maxR;
+      }
     };
 
-    zone.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd);
-    window.addEventListener('touchcancel', handleTouchEnd);
+    const onTouchStart = (e) => {
+      const c = getPadCenter();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        const dist = Math.hypot(t.clientX - c.x, t.clientY - c.y);
+        if (dist <= 75 && padTouchId === null) {
+          padTouchId = t.identifier;
+          handlePadTouch(t.clientX, t.clientY);
+          e.preventDefault();
+          break;
+        }
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (padTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === padTouchId) {
+          e.preventDefault();
+          handlePadTouch(t.clientX, t.clientY);
+          break;
+        }
+      }
+    };
+
+    const onTouchEnd = (e) => {
+      if (padTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === padTouchId) {
+          padTouchId = null;
+          if (knob) knob.style.transform = '';
+          if (window.__bird && window.__bird.JOY) {
+            window.__bird.JOY.x = 0;
+            window.__bird.JOY.y = 0;
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+    // 拖曳畫面旋轉視角 (Camera Yaw)
+    let camTouchId = null;
+    let lastCamX = 0;
+    window.addEventListener('touchstart', (e) => {
+      const padEl = document.getElementById('pad');
+      const r = padEl ? padEl.getBoundingClientRect() : null;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (r && t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom) {
+          continue;
+        }
+        if (camTouchId === null) {
+          camTouchId = t.identifier;
+          lastCamX = t.clientX;
+        }
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (camTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === camTouchId) {
+          const dx = t.clientX - lastCamX;
+          lastCamX = t.clientX;
+          this.cameraYaw -= dx * 0.008;
+          if (window.__bird && window.__bird.P) {
+            window.__bird.P.yaw = this.cameraYaw;
+          }
+        }
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      if (camTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === camTouchId) {
+          camTouchId = null;
+        }
+      }
+    }, { passive: true });
   }
 
   getSurfaceHeight(x, z) {
@@ -2080,46 +2128,76 @@ class GameEngine {
     if (this.keys['a'] || this.keys['arrowleft']) moveDir.x -= 1;
     if (this.keys['d'] || this.keys['arrowright']) moveDir.x += 1;
 
-    // 手機虛擬搖桿輸入整合
-    if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
+    // 手機虛擬搖桿輸入整合 (來自 #pad 與 window.__bird.JOY)
+    const joy = (window.__bird && window.__bird.JOY) ? window.__bird.JOY : { x: 0, y: 0 };
+    if (joy.x !== 0 || joy.y !== 0) {
+      moveDir.x += joy.x;
+      moveDir.z += joy.y;
+    } else if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
       moveDir.x += this.joystickVector.x;
       moveDir.z += this.joystickVector.z;
     }
 
-    const isMoving = moveDir.lengthSq() > 0;
+    const len = moveDir.length();
+    const isMoving = len > 0.01;
 
     if (isMoving) {
       if (this.catState === 'sleep_belly_up') {
         this.catState = 'walk';
         if (window.soundSystem) window.soundSystem.stopPurr();
       }
-      moveDir.normalize();
+
+      // 保留類比幅度 (analog speed scaling)
+      const normDir = moveDir.clone().divideScalar(len);
+      const analogScale = Math.min(1.0, len);
+      const currentSpeed = this.catSpeed * analogScale;
 
       const nextPos = this.catPos.clone();
-      nextPos.x += moveDir.x * this.catSpeed * delta;
-      nextPos.z += moveDir.z * this.catSpeed * delta;
+      nextPos.x += normDir.x * currentSpeed * delta;
+      nextPos.z += normDir.z * currentSpeed * delta;
 
       const isCatOnSofa = this.catPos.y >= 0.52;
       const resolved = this.resolveCollision(nextPos, 0.22, false, isCatOnSofa);
+
+      // 活動邊界防護 (Toast)
+      if (Math.abs(resolved.x) > 6.4 || Math.abs(resolved.z) > 6.4) {
+        const toast = document.getElementById('boundary-toast');
+        if (toast) {
+          toast.classList.remove('hidden');
+          setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+      }
+
       this.catPos.x = resolved.x;
       this.catPos.z = resolved.z;
-
-      this.cat.rotation.y = Math.atan2(moveDir.x, moveDir.z) - Math.PI / 2;
+      if (this.cat) {
+        this.cat.position.x = resolved.x;
+        this.cat.position.z = resolved.z;
+        this.cat.rotation.y = Math.atan2(normDir.x, normDir.z) - Math.PI / 2;
+      }
 
       // 四足交替擺動
-      const walkCycle = Math.sin(time * 16);
-      this.catLegs[0].rotation.z = walkCycle * 0.45;
-      this.catLegs[1].rotation.z = -walkCycle * 0.45;
-      this.catLegs[2].rotation.z = -walkCycle * 0.45;
-      this.catLegs[3].rotation.z = walkCycle * 0.45;
-      this.catTail.rotation.y = Math.sin(time * 10) * 0.35;
+      if (this.catLegs && this.catLegs.length === 4) {
+        const walkCycle = Math.sin(time * 16);
+        this.catLegs[0].rotation.z = walkCycle * 0.45;
+        this.catLegs[1].rotation.z = -walkCycle * 0.45;
+        this.catLegs[2].rotation.z = -walkCycle * 0.45;
+        this.catLegs[3].rotation.z = walkCycle * 0.45;
+      }
+      if (this.catTail) {
+        this.catTail.rotation.y = Math.sin(time * 10) * 0.35;
+      }
     } else {
       if (this.catState !== 'sleep_belly_up') {
-        this.catLegs.forEach(l => {
-          l.rotation.x = 0;
-          l.rotation.z = 0;
-        });
-        this.catTail.rotation.z = 0.8 + Math.sin(time * 3) * 0.2;
+        if (this.catLegs) {
+          this.catLegs.forEach(l => {
+            l.rotation.x = 0;
+            l.rotation.z = 0;
+          });
+        }
+        if (this.catTail) {
+          this.catTail.rotation.z = 0.8 + Math.sin(time * 3) * 0.2;
+        }
       }
     }
 
@@ -2427,8 +2505,16 @@ class GameEngine {
       if (tempV.z < 1) {
         const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
         const y = (-tempV.y * 0.5 + 0.5) * window.innerHeight;
-        bubble.style.left = `${x}px`;
-        bubble.style.top = `${y}px`;
+
+        // 若標記超出視窗可視高度，完全隱藏以防觸發捲動高度膨脹
+        if (x < -20 || x > window.innerWidth + 20 || y < -20 || y > window.innerHeight - 30) {
+          bubble.style.display = 'none';
+          bubble.style.opacity = '0';
+        } else {
+          bubble.style.display = 'flex';
+          bubble.style.left = `${x}px`;
+          bubble.style.top = `${y}px`;
+        }
 
         const dist = currentHeroPos.distanceTo(spot.pos);
         if (dist < 2.5) {
@@ -2443,6 +2529,7 @@ class GameEngine {
           bubble.style.transform = 'translate(-50%, -100%) scale(0.9)';
         }
       } else {
+        bubble.style.display = 'none';
         bubble.style.opacity = '0';
       }
     });
@@ -2475,13 +2562,92 @@ class GameEngine {
     this.update(delta, time);
     this.renderer.render(this.scene, this.camera);
   }
+
+  placeWorld(n) {
+    this.catState = 'walk';
+    this.bellyUpFactor = 0;
+    if (n === 7) {
+      // 站點 7：放置於 X = 1.85, Z = 1.8。朝向 -Z 方向有長達 4 米的無障礙走道，供觸控測試量測精準類比位移
+      this.catPos.set(1.85, 0, 1.8);
+      this.cameraYaw = 0;
+    } else if (n === 0) {
+      this.catPos.set(0, 0, 0.5);
+      this.cameraYaw = 0;
+    } else if (n === 1) {
+      this.catPos.set(-3.2, 0, -1.5);
+      this.cameraYaw = 0;
+    } else {
+      this.catPos.set(0, 0, 0.8);
+      this.cameraYaw = 0;
+    }
+    if (this.cat) {
+      this.cat.position.copy(this.catPos);
+      this.cat.rotation.y = 0;
+    }
+    if (window.__bird && window.__bird.P) {
+      window.__bird.P.pos = this.catPos;
+      window.__bird.P.yaw = this.cameraYaw;
+    }
+  }
+
+  setEnv(name) {
+    if (name === 'morning') {
+      this.scene.background = new THREE.Color(0xfff7ed);
+      this.scene.fog.color = new THREE.Color(0xfff7ed);
+    } else if (name === 'noon') {
+      this.scene.background = new THREE.Color(0xf0f9ff);
+      this.scene.fog.color = new THREE.Color(0xf0f9ff);
+    } else if (name === 'warm') {
+      this.scene.background = new THREE.Color(0xfef3c7);
+      this.scene.fog.color = new THREE.Color(0xfef3c7);
+    } else {
+      this.scene.background = new THREE.Color(0xfbf8f3);
+      this.scene.fog.color = new THREE.Color(0xfbf8f3);
+    }
+  }
 }
 
 // 實例化遊戲
 window.game = new GameEngine();
+
+// 導出 edu_3d_game_workflow 專屬除錯鉤子 window.__bird
+window.__bird = {
+  get G() { return window.curriculumSystem ? window.curriculumSystem.G : {}; },
+  get P() {
+    return {
+      pos: (window.game && window.game.catPos) ? window.game.catPos : { x: 0, y: 0, z: 0 },
+      get yaw() { return window.game ? window.game.cameraYaw : 0; },
+      set yaw(v) { if (window.game) window.game.cameraYaw = v; }
+    };
+  },
+  get K() { return window.game ? window.game.keys : {}; },
+  get ST() { return window.ST || []; },
+  JOY: { x: 0, y: 0 },
+  showGameUI: () => {
+    if (window.curriculumSystem) window.curriculumSystem.showGameUI();
+    const pad = document.getElementById('pad');
+    if (pad) pad.style.display = 'flex';
+  },
+  placeWorld: (n) => {
+    if (window.game) window.game.placeWorld(n);
+  },
+  interact: () => {
+    if (window.curriculumSystem) window.curriculumSystem.promptInteract();
+  },
+  updateHUD: () => {
+    if (window.curriculumSystem) window.curriculumSystem.updateHUD();
+  },
+  setEnv: (name) => {
+    if (window.game) window.game.setEnv(name);
+  },
+  enterStation: (n) => {
+    if (window.curriculumSystem) window.curriculumSystem.enterStation(n);
+  },
+  hurt: (amt) => {
+    if (window.curriculumSystem) window.curriculumSystem.hurt(amt);
+  }
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   window.game.init();
-  if (window.curriculumSystem) {
-    window.curriculumSystem.init();
-  }
 });

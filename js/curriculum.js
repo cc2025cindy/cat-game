@@ -1,568 +1,795 @@
 /**
- * 國語三上第六課〈小女生〉擴充題庫與貓咪點心獎勵系統
- * 包含 5 大主題、共 24 道精美互動關卡：
- * 1. 詞語拆解與理解篇 (5題)
- * 2. 標點符號：分號篇 (4題)
- * 3. 成語與慣用語篇 (5題)
- * 4. 生字部首與形近字篇 (6題)
- * 5. 課文深究與閱讀理解篇 (4題)
- * 答對題目可獲得【小魚乾】、【特級貓罐頭】點心，可在 3D 世界中餵食貓咪！
+ * 國語三上第六課 鍾怡雯〈小女生〉
+ * 核心教學闖關與評量系統 (Curriculum & Evaluation System)
+ * 嚴格遵循 edu_3d_game_workflow 規格：
+ * - 4 幕、11 站、24 道 PIRLS 題目
+ * - 體力值 (HP 100) 與答錯 hurt() 扣血/震動機制
+ * - 點心/羽毛收集、稱號進階
+ * - 1200x840 結業證書 Canvas 繪製、localStorage 保存與 PNG 下載
+ * - 教師密碼 (ijun) 全關卡解鎖
  */
+
+const SAVE_KEY = 'cat-game-v1';
+const CERT_KEY = 'cat-game-certs';
+const TUT_KEY = 'bird-tut';
+
+// 稱號進階門檻 (答對率百分比)
+const GRADES = [
+  [0.9, '金牌貓咪守護者'],
+  [0.7, '溫馨陪伴好夥伴'],
+  [0.45, '熱情交流小達人'],
+  [0, '見習貓咪鏟屎官']
+];
 
 class CurriculumSystem {
   constructor() {
-    this.score = 0;
-    this.treatCount = 3; // 開局贈送 3 包小魚乾供試玩餵食
-    this.completedTasks = new Set();
-    this.currentModal = null;
+    this.ST = window.ST || [];
+    this.G = {
+      mode: 'title', // 'title', 'explore', 'station', 'cert'
+      station: 0,
+      hp: 100,
+      feathers: [],
+      mistakes: 0,
+      totalMistakes: 0,
+      ko: false,
+      cleared: new Set(),
+      unlocked: false
+    };
 
-    // 建立 24 道精美題目庫
-    this.quizBank = [
-      // 主題 A：詞語拆解篇
-      {
-        id: 'w1', cat: 'word', title: '解釋「柔細」',
-        desc: '「我過去摸小貓<b style="color:#ea580c;">柔細</b>的毛。」利用拆詞法，怎麼解釋柔細？',
-        options: ['柔軟細微', '溫柔仔細', '柔和精細', '柔軟細長'],
-        correct: 0,
-        tip: '「柔」是指柔軟，「細」是指細微，合起來是柔軟細微！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'w2', cat: 'word', title: '解釋「平整」',
-        desc: '「這條道路十分<b style="color:#ea580c;">平整</b>。」運用拆詞法，句中的平整是什麼意思？',
-        options: ['平靜整齊', '平坦整齊', '平常齊整', '平安完整'],
-        correct: 1,
-        tip: '「平」是指平坦，「整」是指整齊，道路平整就是平坦整齊！',
-        reward: '🥫 特級貓罐頭'
-      },
-      {
-        id: 'w3', cat: 'word', title: '解釋「享受」',
-        desc: '「小女生輕搖著尾巴，一副很<b style="color:#ea580c;">享受</b>的樣子。」',
-        options: ['在物質或精神上得到滿足與樂趣', '忍受辛苦的事情', '接受別人的批評', '想念以前的回憶'],
-        correct: 0,
-        tip: '「享受」是指享用安適、得到滿足舒適的樂趣！',
-        reward: '🥩 柔細肉泥條'
-      },
-      {
-        id: 'w4', cat: 'word', title: '解釋「陪伴」',
-        desc: '「像個可愛的小孩，<b style="color:#ea580c;">陪伴</b>我和家人說話。」陪伴的意思是？',
-        options: ['在旁陪同相伴', '互相爭吵對立', '代替別人做事情', '偷偷跟在後面看'],
-        correct: 0,
-        tip: '「陪伴」是指隨同在旁做伴。',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'w5', cat: 'word', title: '解釋「睡得香甜」',
-        desc: '「哪怕正在角落<b style="color:#ea580c;">睡得香甜</b>」，句中的「香甜」是指？',
-        options: ['身上散發出甜甜的味道', '睡得很熟、很安穩安適', '正在做吃糖果的夢', '在有花香的地方睡覺'],
-        correct: 1,
-        tip: '睡得香甜形容睡得很熟、很安穩舒服！',
-        reward: '🥫 特級貓罐頭'
-      },
+    this.currentStepIdx = 0;
+    this.currentRec = null;
 
-      // 主題 B：標點符號篇 (分號)
-      {
-        id: 's1', cat: 'semi', title: '分號的使用時機',
-        desc: '「我上洗手間，牠會喵喵叫<span style="color:#ea580c;">【 ？ 】</span>我關門洗澡，牠就叫得更大聲。」方框應填入？',
-        options: ['，（逗號）', '；（分號）', '。（句號）', '、（頓號）'],
-        correct: 1,
-        tip: '兩個句子相互獨立又彼此關聯對照，中間要用分號（；）！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 's2', cat: 'semi', title: '三並列排比句',
-        desc: '「小魚在水池裡游泳<span style="color:#ea580c;">【 ？ 】</span>馬匹在草原上奔跑<span style="color:#ea580c;">【 ？ 】</span>鳥兒在空中飛翔。」',
-        options: ['都用逗號 ，', '都用分號 ；', '都用頓號 、', '都用冒號 ：'],
-        correct: 1,
-        tip: '分開並列的三個分句群，中間均應使用分號（；）稍作停頓！',
-        reward: '🥫 特級貓罐頭'
-      },
-      {
-        id: 's3', cat: 'semi', title: '分號口訣記憶',
-        desc: '「分號這個小標點，分開句群站中間。稍作停頓好<span style="color:#ea580c;">【 ？ 】</span>，相互獨立又關聯。」',
-        options: ['排隊', '對照', '休息', '閱讀'],
-        correct: 1,
-        tip: '課本口訣：「稍作停頓好對照，相互獨立又關聯」！',
-        reward: '🥩 柔細肉泥條'
-      },
-      {
-        id: 's4', cat: 'semi', title: '哪一個句子分號使用正確？',
-        desc: '請選出分號使用最恰當的句子：',
-        options: [
-          '今天的天氣；非常好。',
-          '太陽升起來了；照亮了整座城市；微風輕輕吹拂著。',
-          '哥哥喜歡打籃球；弟弟喜歡踢足球。',
-          '桌上有蘋果；香蕉；和西瓜。'
-        ],
-        correct: 2,
-        tip: '「哥哥喜歡打籃球；弟弟喜歡踢足球」是結構對稱的並列句子，使用分號最適當！',
-        reward: '🐟 脆脆小魚乾'
-      },
+    this.initSaveAndCert();
+  }
 
-      // 主題 C：成語與慣用語篇
-      {
-        id: 'i1', cat: 'idiom', title: '成語：七嘴八舌',
-        desc: '一家人圍在客廳開心地聊天出主意，形容「人多且話多紛雜」，應該使用？',
-        options: ['七上八下', '七手八腳', '七嘴八舌', '三言兩語'],
-        correct: 2,
-        tip: '大家都在講話，話多且紛雜，使用「七嘴八舌」！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'i2', cat: 'idiom', title: '成語：七手八腳',
-        desc: '放學了，大家匆匆忙忙收拾教室，手忙腳亂、動作紛亂沒條理，應該用？',
-        options: ['七嘴八舌', '七手八腳', '七拼八湊', '十全十美'],
-        correct: 1,
-        tip: '形容人多且動作紛亂、手忙腳亂就是「七手八腳」！',
-        reward: '🥫 特級貓罐頭'
-      },
-      {
-        id: 'i3', cat: 'idiom', title: '成語：七上八下',
-        desc: '在公布月考成績之前，小明的心裡忐忑不安、心情起伏不定，應該用？',
-        options: ['七嘴八舌', '七上八下', '七扭八歪', '四平八穩'],
-        correct: 1,
-        tip: '形容心神不定、忐忑不安就是「七上八下」！',
-        reward: '🥩 柔細肉泥條'
-      },
-      {
-        id: 'i4', cat: 'idiom', title: '成語：一唱一和',
-        desc: '課文中說：「我叫一聲，牠喵一下，<b style="color:#ea580c;">一唱一和</b>，高高低低」，意思是？',
-        options: ['兩個人在比賽大聲唱歌', '聲音彼此呼應配合、很有默契', '一個人在唱歌，一個人在生氣', '唱歌走音很不和諧'],
-        correct: 1,
-        tip: '一唱一和比喻彼此呼應、互相配合。',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'i5', cat: 'idiom', title: '成語：四腳朝天',
-        desc: '「小女生喜歡<b style="color:#ea580c;">四腳朝天</b>的躺在沙發上」，這個詞生動形容了？',
-        options: ['貓咪跌倒受傷起不來', '貓咪放鬆翻過身、露出白肚子的可愛仰臥姿態', '貓咪伸懶腰準備跳躍', '貓咪生氣想抓人'],
-        correct: 1,
-        tip: '四腳朝天形容仰面躺臥、四隻腳都朝向天空的極度放鬆姿態！',
-        reward: '🥫 特級貓罐頭'
-      },
+  initSaveAndCert() {
+    // 檢查證書紀錄
+    const certRaw = localStorage.getItem(CERT_KEY);
+    if (certRaw) {
+      try {
+        const list = JSON.parse(certRaw);
+        if (Array.isArray(list) && list.length > 0) {
+          this.G.unlocked = true;
+          this.currentRec = list[list.length - 1];
+        }
+      } catch (e) {}
+    }
 
-      // 主題 D：生字部首與形近字篇
-      {
-        id: 'h1', cat: 'hanzi', title: '形近字辨析：柔 vs. 揉',
-        desc: '「我會過去摸摸牠<span style="color:#ea580c;">【甲】</span>細的毛，<span style="color:#ea580c;">【乙】</span>牠又圓又胖的肚子。」甲、乙應填？',
-        options: ['甲：柔，乙：揉', '甲：揉，乙：柔', '甲：柔，乙：柔', '甲：揉，乙：揉'],
-        correct: 0,
-        tip: '毛髮柔軟是木部「柔」；動手揉搓肚子是手部「揉」！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'h2', cat: 'hanzi', title: '量詞與形近字：副 vs. 幅',
-        desc: '「小女生半睜著眼睛，一<span style="color:#ea580c;">【 ？ 】</span>很享受的樣子。」形容神情態度應填？',
-        options: ['副（刀部）', '幅（巾部）', '福（示部）', '富（宀部）'],
-        correct: 0,
-        tip: '形容態度、表情、神情用「副」；形容畫作或布料用「幅」！',
-        reward: '🥫 特級貓罐頭'
-      },
-      {
-        id: 'h3', cat: 'hanzi', title: '部首特輯：「肚」和「膠」',
-        desc: '本課生字「肚」與「膠」的部首是什麼？',
-        options: ['月部', '肉部', '日部', '夕部'],
-        correct: 1,
-        tip: '在國語字典中，「肚」和「膠」在左側看似月字旁，實際上代表身體部位，部首皆為「肉部」！',
-        reward: '🥩 柔細肉泥條'
-      },
-      {
-        id: 'h4', cat: 'hanzi', title: '多音字：「應」的讀音',
-        desc: '「牠會邊走邊回<b style="color:#ea580c;">應</b>」中的「應」應讀作？',
-        options: ['ㄧㄥ（一聲，如：應該）', 'ㄧㄥˋ（四聲，如：回應、答應）', 'ㄧㄥˇ（三聲）', 'ㄧㄥˊ（二聲）'],
-        correct: 1,
-        tip: '回應、反應、答應中的「應」都讀四聲「ㄧㄥˋ」！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'h5', cat: 'hanzi', title: '生字筆畫：關門的「關」',
-        desc: '「我<b style="color:#ea580c;">關</b>門洗澡」的「關」字，部首是什麼？總筆畫是多少？',
-        options: ['門部，19 畫', '八部，15 畫', '大部，18 畫', '木部，19 畫'],
-        correct: 0,
-        tip: '「關」部首為「門部」，門部 11 畫，扣除部首後 8 畫，總筆畫 19 畫！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'h6', cat: 'hanzi', title: '生字結構：奮力的「奮」',
-        desc: '「牠也會<b style="color:#ea580c;">奮</b>力睜開眼睛」的「奮」字，部首是什麼？',
-        options: ['田部', '隹部', '大部', '十部'],
-        correct: 2,
-        tip: '「奮」最上方為「大」，部首為「大部」，總筆畫 16 畫！',
-        reward: '🥫 特級貓罐頭'
-      },
+    // 檢查進度存檔
+    const saveRaw = localStorage.getItem(SAVE_KEY);
+    if (saveRaw) {
+      try {
+        const s = JSON.parse(saveRaw);
+        if (s.unlocked) this.G.unlocked = true;
+        if (s.station !== undefined) this.G.station = s.station;
+        if (s.hp !== undefined) this.G.hp = s.hp;
+        if (s.feathers) this.G.feathers = s.feathers;
+        if (s.totalMistakes !== undefined) this.G.totalMistakes = s.totalMistakes;
+        if (s.cleared && Array.isArray(s.cleared)) {
+          this.G.cleared = new Set(s.cleared);
+        }
 
-      // 主題 E：課文深究與閱讀理解篇
-      {
-        id: 'r1', cat: 'read', title: '為什麼叫「膠水貓」？',
-        desc: '課文中作者為什麼稱小女生是一隻「膠水貓」？',
-        options: [
-          '因為牠不小心踩翻了桌上的膠水瓶',
-          '因為牠特別黏人，作者走到哪牠就緊緊跟到哪',
-          '因為牠的毛摸起來黏黏的',
-          '因為牠最喜歡玩有黏性的玩具'
-        ],
-        correct: 1,
-        tip: '膠水貓是作者生動的借喻，形容小女生非常黏人、隨時形影不離！',
-        reward: '🐟 脆脆小魚乾'
-      },
-      {
-        id: 'r2', cat: 'read', title: '貓咪心情不好時的舉動',
-        desc: '當主人大叫小女生，如果小女生「心情不好」，牠會怎麼做？',
-        options: [
-          '大聲哈氣逃跑藏起來',
-          '邊走邊高興的一唱一和回應',
-          '安安靜靜走來，用雪亮的大眼睛不高興看著，心想「到底什麼事啊？」',
-          '躺在沙發上裝睡完全不理人'
-        ],
-        correct: 2,
-        tip: '課文細緻描寫：心情不好時會安靜走來，用雪亮大眼看著，像在說到底什麼事啊！',
-        reward: '🥫 特級貓罐頭'
-      },
-      {
-        id: 'r3', cat: 'read', title: '修辭技巧：白色小被子',
-        desc: '「毛茸茸的肚子，看起來像蓋上了一條白色小被子。」這句話使用了哪一種修辭？',
-        options: ['排比法', '擬人法', '譬喻法（明喻）', '設問法'],
-        correct: 2,
-        tip: '句子中有比喻詞「像」，將白肚子比喻為白色小被子，是標準的譬喻法！',
-        reward: '🥩 柔細肉泥條'
-      },
-      {
-        id: 'r4', cat: 'read', title: '課文主旨與情感',
-        desc: '課文最後一句「也是我重要的家人，我們的故事，說也說不完。」傳達了什麼情感？',
-        options: [
-          '抱怨養寵物花費太多時間和金錢',
-          '人與動物之間真摯的愛、陪伴與家人般的情感連結',
-          '作者想把小女生送給親戚飼養',
-          '貓咪太吵鬧讓家裡沒辦法安靜'
-        ],
-        correct: 1,
-        tip: '整篇課文洋溢著人與寵物相互信賴、溫暖陪伴的生命關懷！',
-        reward: '🥫 特級貓罐頭'
+        const tCont = document.getElementById('tCont');
+        if (tCont) {
+          tCont.style.display = 'inline-block';
+        }
+      } catch (e) {}
+    }
+  }
+
+  saveGame() {
+    const data = {
+      station: this.G.station,
+      hp: this.G.hp,
+      feathers: this.G.feathers,
+      totalMistakes: this.G.totalMistakes,
+      cleared: Array.from(this.G.cleared),
+      unlocked: this.G.unlocked
+    };
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  saveCertificate(rec) {
+    let list = [];
+    try {
+      const raw = localStorage.getItem(CERT_KEY);
+      if (raw) list = JSON.parse(raw);
+    } catch (e) {}
+    if (!Array.isArray(list)) list = [];
+    list.push(rec);
+    if (list.length > 30) list = list.slice(-30);
+    try {
+      localStorage.setItem(CERT_KEY, JSON.stringify(list));
+      this.G.unlocked = true;
+      this.saveGame();
+    } catch (e) {}
+    this.currentRec = rec;
+  }
+
+  startNewGame() {
+    this.G.station = 0;
+    this.G.hp = 100;
+    this.G.feathers = [];
+    this.G.mistakes = 0;
+    this.G.totalMistakes = 0;
+    this.G.cleared = new Set();
+    this.saveGame();
+    this.enterStation(0);
+    this.showGameUI();
+  }
+
+  continueGame() {
+    this.showGameUI();
+    if (this.G.station >= this.ST.length) {
+      // 已全通關：直接顯示結業證書
+      const rec = this.currentRec || {
+        name: '優秀同學',
+        grade: '金牌貓咪守護者',
+        got: 24,
+        max: 24,
+        hp: this.G.hp,
+        mistakes: this.G.totalMistakes,
+        date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }),
+        ts: Date.now()
+      };
+      this.showCertificate(rec);
+    } else {
+      this.enterStation(this.G.station);
+    }
+  }
+
+  showGameUI() {
+    this.G.mode = 'explore';
+    const title = document.getElementById('title');
+    if (title) title.style.display = 'none';
+    const tut = document.getElementById('tut');
+    if (tut) tut.style.display = 'none';
+    const loading = document.getElementById('loading');
+    if (loading) loading.style.display = 'none';
+    const roleSelect = document.getElementById('role-select-modal');
+    if (roleSelect) roleSelect.classList.remove('active');
+
+    const overlay = document.getElementById('ui-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    this.updateHUD();
+  }
+
+  enterStation(stationIdx) {
+    if (stationIdx < 0 || stationIdx >= this.ST.length) return;
+    this.G.station = stationIdx;
+    this.currentStepIdx = 0;
+    const st = this.ST[stationIdx];
+
+    // 更新任務提示與菱形
+    this.updateHUD();
+
+    // 在 3D 世界中放置主角位置
+    if (window.game && window.game.placeWorld) {
+      window.game.placeWorld(stationIdx);
+    }
+
+    // 若為劇情站 (story)：自動開啟課文段落觀賞對話
+    if (st.kind === 'story') {
+      this.showStoryStation(st);
+    }
+  }
+
+  showStoryStation(st) {
+    this.G.mode = 'station';
+    const modal = document.getElementById('station-modal');
+    if (!modal) return;
+    document.getElementById('st-modal-badge').innerText = `${st.para}・第 ${st.id} 站`;
+    document.getElementById('st-modal-title').innerText = st.name;
+    document.getElementById('st-modal-text').innerHTML = `「${st.text}」`;
+    const btn = document.getElementById('st-modal-btn');
+    btn.innerText = '繼續探索下一站 🐾';
+    btn.onclick = () => {
+      this.closeModal('station-modal');
+      this.G.cleared.add(st.id);
+      this.saveGame();
+      this.G.mode = 'explore';
+      if (st.id + 1 < this.ST.length) {
+        this.enterStation(st.id + 1);
       }
-    ];
+    };
+    modal.classList.add('active');
   }
 
-  init() {
-    this.bindEvents();
-    this.updateScoreUI();
+  promptInteract() {
+    const st = this.ST[this.G.station];
+    if (!st || st.kind === 'story') return;
+
+    this.G.mode = 'station';
+    const modal = document.getElementById('station-modal');
+    if (!modal) return;
+    document.getElementById('st-modal-badge').innerText = `${st.para}・第 ${st.id} 站`;
+    document.getElementById('st-modal-title').innerText = st.name;
+    document.getElementById('st-modal-text').innerHTML = `「${st.text}」`;
+    const btn = document.getElementById('st-modal-btn');
+    btn.innerText = st.dialogBtn || '接受本站挑戰 📖';
+    btn.onclick = () => {
+      this.closeModal('station-modal');
+      this.startStationSteps();
+    };
+    modal.classList.add('active');
   }
 
-  bindEvents() {
-    const closeBtn = document.getElementById('modal-close');
-    const overlay = document.getElementById('modal-overlay');
-    if (closeBtn && overlay) {
-      closeBtn.addEventListener('click', () => this.closeModal());
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) this.closeModal();
+  startStationSteps() {
+    this.currentStepIdx = 0;
+    this.runCurrentStep();
+  }
+
+  runCurrentStep() {
+    const st = this.ST[this.G.station];
+    if (!st || !st.steps || this.currentStepIdx >= st.steps.length) {
+      // 本站全部挑戰成功！
+      this.onStationComplete();
+      return;
+    }
+
+    const q = st.steps[this.currentStepIdx];
+    this.renderQuestionModal(q);
+  }
+
+  renderQuestionModal(q) {
+    const modal = document.getElementById('quiz-modal');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    document.getElementById('quiz-badge').innerText = `PIRLS【${q.level}】・第 ${q.no} 題`;
+    document.getElementById('quiz-question').innerText = q.q;
+
+    const body = document.getElementById('quiz-options-container');
+    body.innerHTML = '';
+
+    const feedback = document.getElementById('quiz-feedback');
+    feedback.className = 'quiz-feedback-box hidden';
+    feedback.innerText = '';
+
+    // 依據題型渲染作答介面
+    if (q.type === 'choice') {
+      const grid = document.createElement('div');
+      grid.className = 'choice-grid';
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = `<span class="choice-letter">${['A', 'B', 'C', 'D'][idx]}</span> ${opt}`;
+        btn.onclick = () => this.checkAnswer(idx === q.answer, q);
+        grid.appendChild(btn);
       });
-    }
-  }
+      body.appendChild(grid);
+    } else if (q.type === 'tf') {
+      const grid = document.createElement('div');
+      grid.className = 'tf-grid';
+      const btnT = document.createElement('button');
+      btnT.className = 'choice-btn tf-btn';
+      btnT.innerHTML = '⭕ <b>正確 (O)</b>';
+      btnT.onclick = () => this.checkAnswer(q.answer === true, q);
 
-  addScore(points, taskId) {
-    this.score += points;
-    if (taskId) this.completedTasks.add(taskId);
-    this.updateScoreUI();
-    if (window.soundSystem) window.soundSystem.playSuccess();
-  }
+      const btnF = document.createElement('button');
+      btnF.className = 'choice-btn tf-btn';
+      btnF.innerHTML = '❌ <b>錯誤 (X)</b>';
+      btnF.onclick = () => this.checkAnswer(q.answer === false, q);
 
-  addTreat(amount = 1, treatName = '🐟 脆脆小魚乾') {
-    this.treatCount += amount;
-    this.updateScoreUI();
-    this.showFloatingNotice(`獲得獎勵：${treatName} +${amount}！✨`);
-  }
-
-  consumeTreat() {
-    if (this.treatCount > 0) {
-      this.treatCount--;
-      this.updateScoreUI();
-      return true;
-    }
-    return false;
-  }
-
-  updateScoreUI() {
-    const scoreEl = document.getElementById('score-display');
-    const treatEl = document.getElementById('treat-display');
-    const progressEl = document.getElementById('progress-bar');
-
-    if (scoreEl) scoreEl.textContent = `${this.score} 分`;
-    if (treatEl) treatEl.textContent = `🐟 點心 x ${this.treatCount}`;
-    if (progressEl) {
-      const percentage = Math.min(100, Math.round((this.completedTasks.size / this.quizBank.length) * 100));
-      progressEl.style.width = `${Math.max(12, percentage)}%`;
-    }
-  }
-
-  showFloatingNotice(text) {
-    const prompt = document.getElementById('center-prompt');
-    const promptText = document.getElementById('prompt-text');
-    if (prompt && promptText) {
-      promptText.innerHTML = text;
-      prompt.classList.remove('hidden');
-      setTimeout(() => prompt.classList.add('hidden'), 2600);
-    }
-  }
-
-  openModal(title, tag, desc, contentHtml, footerHtml = '') {
-    const overlay = document.getElementById('modal-overlay');
-    const titleEl = document.getElementById('modal-title');
-    const tagEl = document.getElementById('modal-tag');
-    const descEl = document.getElementById('modal-desc');
-    const bodyEl = document.getElementById('modal-body');
-    const footerEl = document.getElementById('modal-footer');
-
-    if (titleEl) titleEl.innerHTML = title;
-    if (tagEl) tagEl.textContent = tag;
-    if (descEl) descEl.innerHTML = desc;
-    if (bodyEl) bodyEl.innerHTML = contentHtml;
-    if (footerEl) footerEl.innerHTML = footerHtml;
-
-    if (overlay) overlay.classList.add('active');
-  }
-
-  closeModal() {
-    const overlay = document.getElementById('modal-overlay');
-    if (overlay) overlay.classList.remove('active');
-    if (window.soundSystem) window.soundSystem.stopPurr();
-  }
-
-  /* ==========================================================================
-     百寶箱闖關題庫總覽 (Quiz Hub / Quest Browser)
-     ========================================================================== */
-  openQuizHub(selectedCategory = 'all') {
-    const title = '📖 國語第六課〈小女生〉百寶箱大考驗';
-    const tag = `共 24 道精美關卡・已完成 ${this.completedTasks.size} 題`;
-    const desc = '回答各單元問題，累積<b>學習積分</b>並收集<b>貓咪小魚乾點心</b>，可以用來餵食小女生喔！';
-
-    const categories = [
-      { id: 'all', name: '全部挑戰' },
-      { id: 'word', name: '🧶 詞語探索' },
-      { id: 'semi', name: '✨ 標點分號' },
-      { id: 'idiom', name: '💬 成語狀況' },
-      { id: 'hanzi', name: '📖 生字部首' },
-      { id: 'read', name: '💖 課文深究' }
-    ];
-
-    let tabsHtml = `<div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; margin-bottom:14px;">`;
-    categories.forEach(cat => {
-      const activeStyle = cat.id === selectedCategory ? 'background:#f97316; color:white; font-weight:800;' : 'background:#f1f5f9; color:#475569;';
-      tabsHtml += `<button style="padding:6px 14px; border-radius:20px; border:none; cursor:pointer; font-size:13px; white-space:nowrap; ${activeStyle}" onclick="curriculumSystem.openQuizHub('${cat.id}')">${cat.name}</button>`;
-    });
-    tabsHtml += `</div>`;
-
-    let listHtml = `<div style="display:grid; grid-template-columns:1fr; gap:10px; max-height:48vh; overflow-y:auto; padding-right:6px;">`;
-    const filtered = selectedCategory === 'all' ? this.quizBank : this.quizBank.filter(q => q.cat === selectedCategory);
-
-    filtered.forEach((q, idx) => {
-      const isDone = this.completedTasks.has(q.id);
-      const doneBadge = isDone ? `<span style="background:#dcfce7; color:#166534; font-size:11px; padding:2px 8px; border-radius:10px; font-weight:800;">✓ 已過關</span>` : `<span style="background:#fef3c7; color:#b45309; font-size:11px; padding:2px 8px; border-radius:10px;">⭐ 待挑戰</span>`;
-      listHtml += `
-        <div style="background:white; border:2px solid ${isDone ? '#86efac' : '#e2e8f0'}; border-radius:16px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'" onclick="curriculumSystem.startSingleQuiz('${q.id}')">
-          <div>
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-              <b style="color:#334155; font-size:15px;">${q.title}</b>
-              ${doneBadge}
-            </div>
-            <div style="font-size:12px; color:#64748b;">通關獎勵：${q.reward} + 15積分</div>
-          </div>
-          <button style="background:${isDone ? '#f1f5f9' : '#ea580c'}; color:${isDone ? '#475569' : 'white'}; border:none; padding:6px 14px; border-radius:14px; font-weight:700; font-size:12px; cursor:pointer;">${isDone ? '再次複習' : '開始挑戰'}</button>
+      grid.appendChild(btnT);
+      grid.appendChild(btnF);
+      body.appendChild(grid);
+    } else if (q.type === 'fill') {
+      const container = document.createElement('div');
+      container.className = 'fill-container';
+      const parts = q.sentence.split('＿');
+      container.innerHTML = `
+        <div class="fill-sentence">
+          ${parts[0]}<span class="fill-blank" id="fill-blank">？</span>${parts[1] || ''}
         </div>
+        <div class="fill-tiles" id="fill-tiles"></div>
       `;
-    });
-    listHtml += `</div>`;
+      body.appendChild(container);
 
-    this.openModal(title, tag, desc, tabsHtml + listHtml, '');
+      const tilesBox = container.querySelector('#fill-tiles');
+      q.tiles.forEach(tile => {
+        const b = document.createElement('button');
+        b.className = 'fill-tile-btn';
+        b.innerText = tile;
+        b.onclick = () => {
+          document.getElementById('fill-blank').innerText = tile;
+          this.checkAnswer(tile === q.answer, q);
+        };
+        tilesBox.appendChild(b);
+      });
+    } else if (q.type === 'match') {
+      const container = document.createElement('div');
+      container.className = 'match-container';
+      container.innerHTML = `
+        <div class="match-desc">請點擊卡片與對應的涵義框進行配對：</div>
+        <div class="match-zones" id="match-zones"></div>
+        <div class="match-cards" id="match-cards"></div>
+      `;
+      body.appendChild(container);
+
+      const userMatches = {};
+      let selectedCard = null;
+
+      const renderMatch = () => {
+        const zonesEl = container.querySelector('#match-zones');
+        const cardsEl = container.querySelector('#match-cards');
+        zonesEl.innerHTML = '';
+        cardsEl.innerHTML = '';
+
+        q.zones.forEach(zone => {
+          const matchedCard = Object.keys(userMatches).find(k => userMatches[k] === zone);
+          const zEl = document.createElement('div');
+          zEl.className = 'match-zone-card' + (matchedCard ? ' filled' : '');
+          zEl.innerHTML = `<div class="zone-label">【${zone}】</div><div class="zone-val">${matchedCard ? '🐾 ' + matchedCard : '（點此放入）'}</div>`;
+          zEl.onclick = () => {
+            if (selectedCard) {
+              userMatches[selectedCard] = zone;
+              selectedCard = null;
+              renderMatch();
+              // 檢查是否全部配對
+              if (Object.keys(userMatches).length === q.cards.length) {
+                const ok = Object.keys(q.answer).every(k => userMatches[k] === q.answer[k]);
+                this.checkAnswer(ok, q);
+              }
+            }
+          };
+          zonesEl.appendChild(zEl);
+        });
+
+        q.cards.forEach(card => {
+          if (userMatches[card]) return;
+          const cEl = document.createElement('button');
+          cEl.className = 'match-card-btn' + (selectedCard === card ? ' selected' : '');
+          cEl.innerText = card;
+          cEl.onclick = () => {
+            selectedCard = card;
+            renderMatch();
+          };
+          cardsEl.appendChild(cEl);
+        });
+      };
+      renderMatch();
+    } else if (q.type === 'order') {
+      const container = document.createElement('div');
+      container.className = 'order-container';
+      container.innerHTML = `
+        <div style="font-size:14px; color:#9a3412; margin-bottom:8px;">
+          請依時間與放鬆順序，點擊按鈕調整順序（${q.labels[0]} ➔ ${q.labels[1]}）：
+        </div>
+        <div id="order-items-box"></div>
+        <button id="order-submit-btn" class="btn-confirm" style="margin-top:12px; width:100%;">確認順序送出</button>
+      `;
+      body.appendChild(container);
+
+      // 洗牌初始順序
+      let currentOrder = [...q.items].reverse();
+      const renderOrder = () => {
+        const box = container.querySelector('#order-items-box');
+        box.innerHTML = '';
+        currentOrder.forEach((item, idx) => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'order-item-card';
+          itemEl.innerHTML = `
+            <span>${idx + 1}. ${item}</span>
+            <div>
+              ${idx > 0 ? `<button class="order-shift-btn" onclick="curriculumSystem.shiftOrderItem(${idx}, -1)">▲</button>` : ''}
+              ${idx < currentOrder.length - 1 ? `<button class="order-shift-btn" onclick="curriculumSystem.shiftOrderItem(${idx}, 1)">▼</button>` : ''}
+            </div>
+          `;
+          box.appendChild(itemEl);
+        });
+      };
+      this.currentOrderItems = currentOrder;
+      this.renderOrderCb = renderOrder;
+      renderOrder();
+
+      container.querySelector('#order-submit-btn').onclick = () => {
+        const ok = q.items.every((it, idx) => this.currentOrderItems[idx] === it);
+        this.checkAnswer(ok, q);
+      };
+    } else if (q.type === 'multi') {
+      const container = document.createElement('div');
+      container.className = 'multi-container';
+      container.innerHTML = `<div id="multi-options-list"></div><button id="multi-submit-btn" class="btn-confirm" style="margin-top:12px; width:100%;">確認送出全部選項</button>`;
+      body.appendChild(container);
+
+      const selected = new Set();
+      const listEl = container.querySelector('#multi-options-list');
+      q.options.forEach((opt, idx) => {
+        const row = document.createElement('label');
+        row.className = 'multi-option-row';
+        row.innerHTML = `<input type="checkbox" value="${idx}"> <span>${opt}</span>`;
+        row.querySelector('input').onchange = (e) => {
+          if (e.target.checked) selected.add(idx);
+          else selected.delete(idx);
+        };
+        listEl.appendChild(row);
+      });
+
+      container.querySelector('#multi-submit-btn').onclick = () => {
+        const userAns = Array.from(selected).sort((a,b) => a - b);
+        const correctAns = [...q.answer].sort((a,b) => a - b);
+        const ok = userAns.length === correctAns.length && userAns.every((val, i) => val === correctAns[i]);
+        this.checkAnswer(ok, q);
+      };
+    }
   }
 
-  /* ==========================================================================
-     單題闖關互動
-     ========================================================================== */
-  startSingleQuiz(quizId) {
-    const q = this.quizBank.find(item => item.id === quizId);
-    if (!q) return;
-
-    const title = q.title;
-    const tag = '課文重點問答';
-    const desc = q.desc;
-
-    let optionsHtml = `<div class="options-grid" style="grid-template-columns:1fr; gap:10px; margin-top:14px;">`;
-    q.options.forEach((opt, idx) => {
-      optionsHtml += `
-        <button class="option-btn" style="text-align:left; padding:14px 18px; font-size:15px;" onclick="curriculumSystem.submitQuizAnswer('${q.id}', ${idx}, this)">
-          <b>${['A', 'B', 'C', 'D'][idx]}.</b> ${opt}
-        </button>
-      `;
-    });
-    optionsHtml += `</div><div id="quiz-feedback" class="feedback-msg"></div>`;
-
-    const footerHtml = `
-      <button class="btn-confirm" style="background:#64748b;" onclick="curriculumSystem.openQuizHub('${q.cat}')">返回題目列表</button>
-    `;
-
-    this.openModal(title, tag, desc, optionsHtml, footerHtml);
+  shiftOrderItem(idx, dir) {
+    if (!this.currentOrderItems) return;
+    const targetIdx = idx + dir;
+    if (targetIdx < 0 || targetIdx >= this.currentOrderItems.length) return;
+    const temp = this.currentOrderItems[idx];
+    this.currentOrderItems[idx] = this.currentOrderItems[targetIdx];
+    this.currentOrderItems[targetIdx] = temp;
+    if (this.renderOrderCb) this.renderOrderCb();
   }
 
-  submitQuizAnswer(quizId, userChoice, btn) {
-    const q = this.quizBank.find(item => item.id === quizId);
-    const fb = document.getElementById('quiz-feedback');
-    if (!q || !fb) return;
+  checkAnswer(isCorrect, q) {
+    const feedback = document.getElementById('quiz-feedback');
+    if (isCorrect) {
+      if (window.soundSystem) {
+        window.soundSystem.playSuccess();
+        window.soundSystem.playMeowRandom();
+      }
+      this.G.feathers.push(q.no);
+      this.updateHUD();
 
-    if (userChoice === q.correct) {
-      fb.className = 'feedback-msg success';
-      fb.innerHTML = `🎉 答對了！${q.tip}<br><b>獲得通關獎勵：${q.reward} +1！</b>`;
-      btn.style.borderColor = '#22c55e';
-      btn.style.background = '#f0fdf4';
-
-      if (!this.completedTasks.has(q.id)) {
-        this.addScore(15, q.id);
-        this.addTreat(1, q.reward);
-      } else {
-        if (window.soundSystem) window.soundSystem.playSuccess();
+      if (feedback) {
+        feedback.className = 'quiz-feedback-box success';
+        feedback.innerHTML = '🎉 <b>太棒了！答對了！獲得 1 包小魚乾點心！</b>';
       }
 
       setTimeout(() => {
-        this.openQuizHub(q.cat);
-      }, 1800);
+        this.currentStepIdx++;
+        this.runCurrentStep();
+      }, 900);
     } else {
-      fb.className = 'feedback-msg error';
-      fb.innerHTML = '答案不太對喔！再讀一次題目，仔細想一想！';
-      btn.style.borderColor = '#ef4444';
-      btn.style.background = '#fef2f2';
-      if (window.soundSystem) window.soundSystem.playError();
+      if (window.soundSystem) {
+        window.soundSystem.playMistake();
+      }
+      this.hurt(15);
+      this.G.mistakes++;
+      this.G.totalMistakes++;
+
+      if (feedback) {
+        feedback.className = 'quiz-feedback-box error';
+        feedback.innerHTML = `💡 <b>提示：</b>${q.hint}`;
+      }
     }
   }
 
-  /* ==========================================================================
-     保留特殊互動：撫摸白肚子、拆詞法、分號星光橋
-     ========================================================================== */
-  startBellyRubInteraction() {
-    if (window.game) {
-      window.game.setCatAIState('sleep_belly_up');
+  hurt(amount = 15) {
+    this.G.hp = Math.max(0, this.G.hp - amount);
+    this.updateHUD();
+
+    // 螢幕邊緣紅光抖動效果
+    document.body.classList.add('screen-hurt');
+    setTimeout(() => document.body.classList.remove('screen-hurt'), 450);
+
+    if (this.G.hp <= 0) {
+      this.handleKO();
     }
-    const title = '摸摸<ruby>小<rt>ㄒㄧㄠˇ</rt>女<rt>ㄋㄩˇ</rt>生<rt>ㄕㄥ</rt></ruby>的白肚子';
-    const tag = '課文情境互動';
-    const desc = '「毛茸茸的肚子，看起來像蓋上了一條白色小被子。我會過去摸摸牠柔細的毛，揉揉牠又圓又胖的肚子。」<br><small style="color:#d97706;">★ 請用滑鼠或手指在貓咪肚皮上畫圈揉揉！</small>';
-
-    const contentHtml = `
-      <div class="belly-rub-area" id="belly-rub-zone">
-        <div class="belly-target" id="belly-target">🐱</div>
-        <div style="position: absolute; bottom: 12px; font-weight:700; color:#b45309; font-size:14px;" id="rub-status-text">
-          滑鼠按住肚子，輕輕揉揉牠...
-        </div>
-      </div>
-      <div class="progress-bar-bg" style="width:100%; height:16px; margin-top:16px; border-radius:8px;">
-        <div class="progress-bar-fill" id="belly-fill" style="width: 0%; background: linear-gradient(90deg, #f6ad55, #ed8936);"></div>
-      </div>
-      <div id="belly-feedback" class="feedback-msg"></div>
-    `;
-
-    const footerHtml = `
-      <button class="btn-confirm" id="btn-belly-done" style="display:none;" onclick="curriculumSystem.finishBellyRub()">完成互動 (+20分、獲得小魚乾)</button>
-    `;
-
-    this.openModal(title, tag, desc, contentHtml, footerHtml);
-    this.initBellyRubEvents();
   }
 
-  initBellyRubEvents() {
-    const zone = document.getElementById('belly-rub-zone');
-    const fill = document.getElementById('belly-fill');
-    const feedback = document.getElementById('belly-feedback');
-    const statusText = document.getElementById('rub-status-text');
-    const doneBtn = document.getElementById('btn-belly-done');
-    let rubCount = 0;
+  handleKO() {
+    this.G.ko = true;
+    alert('😿 體力耗盡！小女生跑回沙發休息了。休息一下，重新挑戰本關吧！');
+    this.G.hp = 100;
+    this.currentStepIdx = 0;
+    this.updateHUD();
+    this.closeModal('quiz-modal');
+    this.enterStation(this.G.station);
+  }
 
-    if (!zone) return;
+  onStationComplete() {
+    this.closeModal('quiz-modal');
+    this.G.cleared.add(this.G.station);
+    this.saveGame();
 
-    const onRub = (e) => {
-      rubCount += 1.8;
-      const progress = Math.min(100, Math.round(rubCount));
-      if (fill) fill.style.width = `${progress}%`;
+    if (window.soundSystem) {
+      window.soundSystem.playOwnerVoice('praise');
+    }
 
-      if (Math.random() > 0.6) {
-        this.spawnHeart(zone, e.clientX || (e.touches && e.touches[0].clientX), e.clientY || (e.touches && e.touches[0].clientY));
+    if (this.G.station >= this.ST.length - 1) {
+      // 全通關！
+      this.promptCertificateName();
+    } else {
+      alert(`🎉 恭喜完成本站挑戰！小女生親暱地蹭了蹭你的大腿！`);
+      this.enterStation(this.G.station + 1);
+    }
+  }
+
+  promptCertificateName() {
+    const modal = document.getElementById('name-input-modal');
+    if (modal) {
+      modal.classList.add('active');
+    } else {
+      const name = prompt('恭喜全課通關！請輸入你的名字以領取結業證書：', '王小明');
+      this.finishAndGenerateCertificate(name || '優秀同學');
+    }
+  }
+
+  finishAndGenerateCertificate(studentName) {
+    this.closeModal('name-input-modal');
+    const totalQ = 24;
+    const got = this.G.feathers.length;
+    const ratio = got / totalQ;
+
+    let grade = '見習貓咪鏟屎官';
+    for (const [threshold, title] of GRADES) {
+      if (ratio >= threshold) {
+        grade = title;
+        break;
       }
+    }
 
-      if (window.soundSystem && progress > 15) {
-        window.soundSystem.startPurr();
-      }
-
-      if (progress >= 100) {
-        zone.removeEventListener('mousemove', onRub);
-        zone.removeEventListener('touchmove', onRub);
-        if (window.soundSystem) window.soundSystem.stopPurr();
-        if (statusText) statusText.textContent = '小女生半睜著眼睛，輕搖尾巴，一「副」很享受的樣子！🥰';
-        if (feedback) {
-          feedback.className = 'feedback-msg success';
-          feedback.innerHTML = '太棒了！小女生感到非常幸福，發出了舒服的呼嚕聲！';
-        }
-        if (doneBtn) doneBtn.style.display = 'inline-block';
-        if (window.soundSystem) window.soundSystem.playMeow('cute');
-      }
+    const rec = {
+      name: studentName,
+      grade: grade,
+      got: got,
+      max: totalQ,
+      hp: this.G.hp,
+      mistakes: this.G.totalMistakes,
+      date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }),
+      ts: Date.now()
     };
 
-    zone.addEventListener('mousedown', () => zone.addEventListener('mousemove', onRub));
-    window.addEventListener('mouseup', () => {
-      zone.removeEventListener('mousemove', onRub);
-      if (window.soundSystem) window.soundSystem.stopPurr();
-    });
-    zone.addEventListener('mouseleave', () => {
-      zone.removeEventListener('mousemove', onRub);
-      if (window.soundSystem) window.soundSystem.stopPurr();
-    });
-
-    zone.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      zone.addEventListener('touchmove', onRub);
-    });
-    zone.addEventListener('touchend', () => {
-      zone.removeEventListener('touchmove', onRub);
-      if (window.soundSystem) window.soundSystem.stopPurr();
-    });
-    zone.addEventListener('touchcancel', () => {
-      zone.removeEventListener('touchmove', onRub);
-      if (window.soundSystem) window.soundSystem.stopPurr();
-    });
+    this.saveCertificate(rec);
+    this.showCertificate(rec);
   }
 
-  spawnHeart(parent, clientX, clientY) {
-    const rect = parent.getBoundingClientRect();
-    const heart = document.createElement('div');
-    heart.className = 'floating-heart';
-    heart.textContent = ['❤️', '✨', '🐾', '💖'][Math.floor(Math.random() * 4)];
-    const x = clientX ? (clientX - rect.left) : (Math.random() * rect.width);
-    const y = clientY ? (clientY - rect.top) : (Math.random() * rect.height);
-    heart.style.left = `${x}px`;
-    heart.style.top = `${y}px`;
-    parent.appendChild(heart);
-    setTimeout(() => heart.remove(), 1000);
-  }
+  showCertificate(rec) {
+    this.currentRec = rec;
+    const certModal = document.getElementById('cert');
+    if (!certModal) return;
 
-  finishBellyRub() {
-    this.addScore(20, 'belly_rub');
-    this.addTreat(1, '🐟 脆脆小魚乾');
-    this.closeModal();
-    if (window.game) {
-      window.game.makeCatHappy();
+    certModal.classList.remove('hide');
+    certModal.classList.add('active');
+
+    const dataUrl = this.renderCertificateCanvas(rec);
+    const certImg = document.getElementById('certImg');
+    if (certImg) {
+      certImg.src = dataUrl;
     }
   }
 
-  startWordSplitGame() {
-    this.openQuizHub('word');
+  renderCertificateCanvas(rec) {
+    const canvas = document.getElementById('certCanvas') || document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 840;
+    const ctx = canvas.getContext('2d');
+
+    // 1. 底色：象牙暖米色微漸層
+    const bg = ctx.createLinearGradient(0, 0, 1200, 840);
+    bg.addColorStop(0, '#fffcf7');
+    bg.addColorStop(0.5, '#fef9ee');
+    bg.addColorStop(1, '#f7f1e5');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 1200, 840);
+
+    // 2. 邊框裝飾
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(24, 24, 1152, 792);
+
+    ctx.strokeStyle = '#92400e';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(36, 36, 1128, 768);
+
+    // 3. 四角古典角花
+    const drawCorner = (x, y, sx, sy) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(sx, sy);
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(10, 30);
+      ctx.lineTo(10, 10);
+      ctx.lineTo(30, 10);
+      ctx.stroke();
+      ctx.fillStyle = '#b45309';
+      ctx.beginPath();
+      ctx.arc(10, 10, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+    drawCorner(44, 44, 1, 1);
+    drawCorner(1156, 44, -1, 1);
+    drawCorner(44, 796, 1, -1);
+    drawCorner(1156, 796, -1, -1);
+
+    // 4. 頂部課程名稱
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'bold 26px "Noto Serif TC", serif';
+    ctx.fillText('國小國語三上第六課 鍾怡雯〈小女生〉・3D 沉浸式課文探索', 600, 115);
+
+    // 5. 大標題：「結 業 證 書」
+    ctx.fillStyle = '#7c2d12';
+    ctx.font = '900 64px "Noto Serif TC", serif';
+    ctx.fillText('結 業 證 書', 600, 195);
+
+    // 裝飾金色飾線
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(350, 222);
+    ctx.lineTo(850, 222);
+    ctx.stroke();
+
+    // 6. 姓名與證明文字
+    ctx.fillStyle = '#1c1917';
+    ctx.font = 'bold 36px "Noto Sans TC", sans-serif';
+    ctx.fillText(`茲證明　${rec.name || '優秀同學'}　同學`, 600, 295);
+
+    ctx.fillStyle = '#44403c';
+    ctx.font = '500 23px "Noto Sans TC", sans-serif';
+    ctx.fillText('完成教育部審定國語三上第六課〈小女生〉第一人稱 3D 沉浸式閱讀體驗', 600, 355);
+    ctx.fillText('在課文細讀探索、PIRLS 五層次提問挑戰與寵物生命教育互動中表現優異，特頒此證。', 600, 395);
+
+    // 7. 榮譽稱號底牌
+    const bx = 340, by = 445, bw = 520, bh = 76, r = 16;
+    ctx.fillStyle = '#fef3c7';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(bx + r, by);
+    ctx.lineTo(bx + bw - r, by);
+    ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + r);
+    ctx.lineTo(bx + bw, by + bh - r);
+    ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh);
+    ctx.lineTo(bx + r, by + bh);
+    ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - r);
+    ctx.lineTo(bx, by + r);
+    ctx.quadraticCurveTo(bx, by, bx + r, by);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#9a3412';
+    ctx.font = 'bold 32px "Noto Serif TC", serif';
+    ctx.fillText(`榮獲稱號：${rec.grade || '溫馨陪伴好夥伴'}`, 600, 495);
+
+    // 8. 成果數據
+    ctx.fillStyle = '#78716c';
+    ctx.font = '600 20px "Noto Sans TC", sans-serif';
+    const gotText = rec.got !== undefined ? `${rec.got} / ${rec.max}` : '24 / 24';
+    const hpVal = rec.hp !== undefined ? `${rec.hp}%` : '100%';
+    ctx.fillText(`獲得點心：${gotText}　｜　健康體力：${hpVal}　｜　探索進度：4 幕 11 站全通關`, 600, 565);
+
+    // 9. 頒證日期
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#57534e';
+    ctx.font = 'bold 22px "Noto Serif TC", serif';
+    ctx.fillText(`頒證日期：${rec.date || '2026 年 10 月 27 日'}`, 120, 700);
+    ctx.font = '16px "Noto Sans TC", sans-serif';
+    ctx.fillStyle = '#a8a29e';
+    ctx.fillText('認證字號：CAT-GIRL-' + (rec.ts ? rec.ts.toString().slice(-8) : '20261027'), 120, 730);
+
+    // 10. 朱紅方印章
+    const sealX = 960, sealY = 630, sealSize = 104;
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.08)';
+    ctx.fillRect(sealX, sealY, sealSize, sealSize);
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(sealX, sealY, sealSize, sealSize);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(sealX + 6, sealY + 6, sealSize - 12, sealSize - 12);
+
+    ctx.fillStyle = '#dc2626';
+    ctx.textAlign = 'center';
+    ctx.font = '900 32px "Noto Serif TC", serif';
+    ctx.fillText('小女', sealX + sealSize / 4, sealY + sealSize / 2 - 6);
+    ctx.fillText('生印', sealX + sealSize * 3 / 4, sealY + sealSize / 2 - 6);
+    ctx.fillText('教認', sealX + sealSize / 4, sealY + sealSize - 14);
+    ctx.fillText('育證', sealX + sealSize * 3 / 4, sealY + sealSize - 14);
+
+    return canvas.toDataURL('image/png');
   }
 
-  startSemicolonGame() {
-    this.openQuizHub('semi');
+  downloadCertificate() {
+    const rec = this.currentRec || { name: '小女生' };
+    const certImg = document.getElementById('certImg');
+    if (!certImg || !certImg.src) return;
+
+    const link = document.createElement('a');
+    link.download = `${rec.name}_結業證書.png`;
+    link.href = certImg.src;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
-  startIdiomGame() {
-    this.openQuizHub('idiom');
+  updateHUD() {
+    // 體力條
+    const fill = document.getElementById('hp-fill');
+    if (fill) fill.style.width = `${this.G.hp}%`;
+    const txt = document.getElementById('hp-text');
+    if (txt) txt.innerText = `${this.G.hp} HP`;
+
+    // 點心/羽毛
+    const treatDisp = document.getElementById('treat-display');
+    if (treatDisp) {
+      treatDisp.innerText = `小魚乾 x ${this.G.feathers.length}`;
+    }
+
+    // 任務橫幅與提示菱形
+    const st = this.ST[this.G.station];
+    if (st) {
+      const qTitle = document.getElementById('quest-title');
+      if (qTitle) qTitle.innerText = st.quest || st.name;
+      const qDesc = document.getElementById('quest-desc');
+      if (qDesc) qDesc.innerText = st.obj || st.para;
+
+      const pTxt = document.getElementById('prompt-text');
+      if (pTxt) pTxt.innerText = st.prompt || '靠近觀察';
+    }
   }
 
-  startHanziMuseum() {
-    this.openQuizHub('hanzi');
+  openStagesModal() {
+    const modal = document.getElementById('stages-modal');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    const listEl = document.getElementById('stages-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    this.ST.forEach((st, idx) => {
+      const isCleared = this.G.cleared.has(idx);
+      const isCurrent = this.G.station === idx;
+      const isUnlocked = this.G.unlocked || idx <= this.G.station || isCleared;
+
+      const card = document.createElement('div');
+      card.className = `stage-select-card ${isUnlocked ? 'unlocked' : 'locked'} ${isCurrent ? 'current' : ''}`;
+      card.innerHTML = `
+        <div style="font-size:20px;">${st.kind === 'story' ? '📖' : '🐾'}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700; color:#78350f;">第 ${idx} 站：${st.name}</div>
+          <div style="font-size:12px; color:#92400e;">${st.para} ${st.kind === 'story' ? '【劇情】' : '【挑戰 3 題】'}</div>
+        </div>
+        <div>${isUnlocked ? (isCleared ? '⭐ 已通關' : (isCurrent ? '▶ 進行中' : '進入')) : '🔒 未解鎖'}</div>
+      `;
+      if (isUnlocked) {
+        card.onclick = () => {
+          this.closeModal('stages-modal');
+          this.enterStation(idx);
+        };
+      }
+      listEl.appendChild(card);
+    });
+  }
+
+  unlockAllStages(pw) {
+    if (pw === 'ijun') {
+      this.G.unlocked = true;
+      this.saveGame();
+      alert('🔓 教師密碼正確！已成功解鎖全課 11 個站點！');
+      this.openStagesModal();
+    } else {
+      alert('❌ 密碼錯誤，請確認教師密碼！');
+    }
+  }
+
+  closeModal(modalId) {
+    const m = document.getElementById(modalId);
+    if (m) {
+      m.classList.remove('active');
+      m.classList.add('hide');
+    }
   }
 }
 
-// 導出教學實例
+// 實例化全域系統
 window.curriculumSystem = new CurriculumSystem();
+
+function closeCert() {
+  const m = document.getElementById('cert');
+  if (m) {
+    m.classList.remove('active');
+    m.classList.add('hide');
+  }
+}
