@@ -213,8 +213,8 @@ class CurriculumSystem {
       this.G.cleared.add(st.id);
       this.saveGame();
       this.G.mode = 'explore';
-      if (window.soundSystem && typeof window.soundSystem.playOwnerVoice === 'function') {
-        window.soundSystem.playOwnerVoice('praise');
+      if (window.soundSystem && typeof window.soundSystem.playSuccess === 'function') {
+        window.soundSystem.playSuccess();
       }
       if (st.id + 1 < this.ST.length) {
         this.enterStation(st.id + 1);
@@ -491,13 +491,20 @@ class CurriculumSystem {
         });
       }
 
+      const st = this.ST[this.G.station];
+      const isLastStep = !st || !st.steps || (this.currentStepIdx >= st.steps.length - 1);
+      const isFirstOrLastQuizLevel = (this.G.station === 1 || this.G.station === this.ST.length - 1);
+
       try {
         if (window.soundSystem) {
           if (typeof window.soundSystem.playSuccess === 'function') window.soundSystem.playSuccess();
-          if (typeof window.soundSystem.playOwnerVoice === 'function') {
-            window.soundSystem.playOwnerVoice('praise');
-          } else if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
-            window.voiceSystem.speak('praise');
+          // 僅在第一關 (station 1) 與最後一關 (station 10) 完成時播放「太棒了，答對囉！小女生好崇拜你！」語音
+          if (isLastStep && isFirstOrLastQuizLevel) {
+            if (typeof window.soundSystem.playOwnerVoice === 'function') {
+              window.soundSystem.playOwnerVoice('praise');
+            } else if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
+              window.voiceSystem.speak('praise');
+            }
           }
         }
       } catch (e) {
@@ -507,20 +514,17 @@ class CurriculumSystem {
       this.G.feathers.push(q.no);
       this.updateHUD();
 
-      const st = this.ST[this.G.station];
-      const isLastStep = !st || !st.steps || (this.currentStepIdx >= st.steps.length - 1);
-
       if (feedback) {
         feedback.className = 'quiz-feedback-box success';
         feedback.innerHTML = `
-          <div style="font-size:15px; font-weight:800; margin-bottom:6px;">🎉 太棒了，答對囉！小女生好崇拜你！（獲得 1 包小魚乾點心）</div>
+          <div style="font-size:15px; font-weight:800; margin-bottom:6px;">🎉 答對了！獲得 1 包小魚乾點心！</div>
           <button class="btn-confirm next-q-btn" id="btn-next-step" onclick="curriculumSystem.nextQuestion()" style="margin-top:8px; width:100%; font-size:15px; padding:10px 18px; border-radius:12px; cursor:pointer;">${isLastStep ? '完成本關挑戰 🎉' : '繼續下一題 ➔'}</button>
         `;
       }
 
       this._nextQTimer = setTimeout(() => {
         this.nextQuestion();
-      }, 2400);
+      }, isLastStep && isFirstOrLastQuizLevel ? 2400 : 1400);
     } else {
       try {
         if (window.soundSystem) {
@@ -601,11 +605,15 @@ class CurriculumSystem {
     this.G.cleared.add(this.G.station);
     this.saveGame();
 
+    const isFirstOrLastQuizLevel = (this.G.station === 1 || this.G.station === this.ST.length - 1);
+
     try {
-      if (window.soundSystem && typeof window.soundSystem.playOwnerVoice === 'function') {
-        window.soundSystem.playOwnerVoice('praise');
-      } else if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
-        window.voiceSystem.speak('praise');
+      if (isFirstOrLastQuizLevel) {
+        if (window.soundSystem && typeof window.soundSystem.playOwnerVoice === 'function') {
+          window.soundSystem.playOwnerVoice('praise');
+        } else if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
+          window.voiceSystem.speak('praise');
+        }
       } else if (window.soundSystem && typeof window.soundSystem.playSuccess === 'function') {
         window.soundSystem.playSuccess();
       }
