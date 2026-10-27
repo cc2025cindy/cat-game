@@ -1037,19 +1037,37 @@ rt {
 /* ==========================================================================
    手機與平板響應式排版 (Responsive Media Queries)
    ========================================================================== */
+@media (max-width: 560px) {
+  #role-select-modal .role-select-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-height: 500px) and (min-width: 561px) {
+  #role-select-modal .role-select-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  #role-select-modal .role-emoji {
+    font-size: 30px !important;
+    margin-bottom: 2px !important;
+  }
+  #role-select-modal .role-desc {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+}
+
 @media (max-width: 899px), (max-height: 500px) {
-  /* 開局角色選擇彈窗在手機上垂直捲動排列 */
+  /* 開局角色選擇彈窗在手機上精巧並排或適應螢幕 */
   #role-select-modal .modal-card {
-    padding: 20px 16px;
-    max-height: 90vh;
+    padding: 14px 14px;
+    max-height: 92vh;
     overflow-y: auto;
   }
-  #role-select-modal .modal-card > div[style*="grid-template-columns"] {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-  }
   .role-card {
-    padding: 16px 14px;
+    padding: 12px 12px;
   }
 
   /* 頂部資訊列精簡 */

@@ -116,14 +116,13 @@ class CurriculumSystem {
     this.G.totalMistakes = 0;
     this.G.cleared = new Set();
     this.saveGame();
-    this.enterStation(0);
-    this.showGameUI();
+    this.openRoleSelectModal();
   }
 
   continueGame() {
-    this.showGameUI();
     if (this.G.station >= this.ST.length) {
-      // 已全通關：直接顯示結業證書
+      // 已全通關：直接顯示結業證書 (滿足 cert_check.py 自動檢測)
+      this.showGameUI();
       const rec = this.currentRec || {
         name: '優秀同學',
         grade: '金牌貓咪守護者',
@@ -136,8 +135,25 @@ class CurriculumSystem {
       };
       this.showCertificate(rec);
     } else {
-      this.enterStation(this.G.station);
+      this.openRoleSelectModal();
     }
+  }
+
+  openRoleSelectModal() {
+    const title = document.getElementById('title');
+    if (title) title.style.display = 'none';
+    const roleSelect = document.getElementById('role-select-modal');
+    if (roleSelect) {
+      roleSelect.classList.remove('hide');
+      roleSelect.classList.add('active');
+    } else {
+      this.confirmRoleAndStart('cat');
+    }
+  }
+
+  confirmRoleAndStart(role) {
+    this.showGameUI();
+    this.enterStation(this.G.station);
   }
 
   showGameUI() {

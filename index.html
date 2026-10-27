@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261027_6">
+  <link rel="stylesheet" href="css/style.css?v=20261027_7">
   <!-- Three.js 核心庫 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -32,9 +32,12 @@
       <div class="title-badge">國語三上第六課 鍾怡雯〈小女生〉</div>
       <h1 class="title-heading">《膠水貓大冒險》3D 沉浸式課文探索</h1>
       <p class="title-subtitle">在 3D 溫馨客廳中體驗「小女生」形影不離的陪伴，挑戰 PIRLS 五層次提問與課文探索！</p>
+      <div style="background: #fff7ed; border: 1.5px solid #fdba74; color: #9a3412; border-radius: 14px; padding: 8px 14px; font-size: 13px; font-weight: 700; margin-bottom: 14px; display: inline-block;">
+        👀 雙視角自由體驗：開始前可選擇【🐱 貓咪視角（小女生）】或【🧑‍🎨 主人視角（小主人）】！
+      </div>
       <div class="title-actions">
         <button id="tCont" class="btn-primary-glow" style="display:none;" onclick="curriculumSystem.continueGame()">▶ 繼續冒險</button>
-        <button id="tStart" class="btn-primary-glow" onclick="curriculumSystem.startNewGame()">🐾 開始新探索</button>
+        <button id="tStart" class="btn-primary-glow" onclick="curriculumSystem.startNewGame()">🐾 開始探索（選擇視角）</button>
         <button id="tStages" class="btn-secondary" onclick="curriculumSystem.openStagesModal()">📖 關卡與章節一覽</button>
       </div>
       <div class="title-teacher-row">
@@ -44,45 +47,44 @@
     </div>
   </div>
 
-  <!-- 開局身分選擇面板 -->
+  <!-- 開局身分與視角選擇面板 -->
   <div id="role-select-modal" class="modal-overlay" style="z-index: 200;">
     <div class="modal-card" style="max-width: 680px; text-align: center;">
-      <div style="font-size: 42px; margin-bottom: 8px;">🐱✨</div>
-      <div class="modal-tag">國語三上第六課〈小女生〉・3D沉浸式互動遊戲</div>
-      <h1 style="font-size: 26px; font-weight: 900; color: #b45309; margin-bottom: 8px;">
-        《<ruby>小<rt>ㄒㄧㄠˇ</rt>女<rt>ㄋㄩˇ</rt>生<rt>ㄕㄥ</rt></ruby>：膠水貓大冒險》
-      </h1>
-      <p style="font-size: 15px; color: #78350f; margin-bottom: 24px;">
-        請選擇你在 3D 故事世界中想要體驗的身分：
+      <div class="modal-tag">步驟 1：選擇你的遊玩視角</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #b45309; margin: 6px 0 6px;">
+        請選擇你想體驗的視角與身分
+      </h2>
+      <p style="font-size: 13.5px; color: #78350f; margin-bottom: 14px;">
+        你可以化身可愛橘貓「小女生」或溫暖的「小主人」（遊戲中隨時可按右上角 🔄 切換視角）：
       </p>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-        <!-- 選項 1：扮演小女生（貓咪） -->
+      <div class="role-select-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px;">
+        <!-- 選項 1：扮演小女生（貓咪視角） -->
         <div class="role-card" id="select-cat-card" onclick="selectRole('cat')">
-          <div style="font-size: 54px; margin-bottom: 10px;">🐾</div>
-          <h3 style="font-size: 20px; font-weight: 800; color: #ea580c; margin-bottom: 6px;">扮演「小女生」（貓咪）</h3>
-          <div style="font-size: 12px; color: #c2410c; font-weight: 700; margin-bottom: 10px;">【30cm 貼地貓貓視角】</div>
-          <p style="font-size: 13px; color: #6b7280; line-height: 1.6; text-align: left;">
-            • 在沙發四腳朝天翻白肚子<br>
-            • 當一隻隨時黏在主人身邊的「膠水貓」<br>
-            • 窗台拍蝴蝶、在洗手間門外喵喵叫<br>
-            • 跳上沙發大腿向主人討點心！
+          <div class="role-emoji" style="font-size: 44px; margin-bottom: 6px;">🐱</div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #ea580c; margin-bottom: 4px;">貓咪視角：小女生</h3>
+          <div style="font-size: 12px; color: #c2410c; font-weight: 700; margin-bottom: 8px;">【30cm 貼地貓貓視角】</div>
+          <p class="role-desc" style="font-size: 12.5px; color: #57534e; line-height: 1.5; text-align: left;">
+            • 體驗低視角仰望客廳與家具<br>
+            • 在沙發四腳朝天翻出白肚子<br>
+            • 跳上貓跳台、碰觸毛線球與老鼠<br>
+            • 當一隻黏在主人身邊的「膠水貓」
           </p>
-          <button class="btn-confirm" style="margin-top: 16px; width: 100%;">選我！當可愛橘貓 🐱</button>
+          <button class="btn-confirm" style="margin-top: 12px; width: 100%; padding: 9px 12px; font-size: 14px;">選我！以貓咪視角開始 🐾</button>
         </div>
 
-        <!-- 選項 2：扮演小主人（作者） -->
+        <!-- 選項 2：扮演小主人（主人視角） -->
         <div class="role-card" id="select-human-card" onclick="selectRole('human')">
-          <div style="font-size: 54px; margin-bottom: 10px;">🧑‍🎨</div>
-          <h3 style="font-size: 20px; font-weight: 800; color: #2563eb; margin-bottom: 6px;">扮演「小主人」（人類）</h3>
-          <div style="font-size: 12px; color: #1d4ed8; font-weight: 700; margin-bottom: 10px;">【第三人稱守護者視角】</div>
-          <p style="font-size: 13px; color: #6b7280; line-height: 1.6; text-align: left;">
-            • 大叫「小女生——」呼喚貓咪飛奔過來<br>
+          <div class="role-emoji" style="font-size: 44px; margin-bottom: 6px;">🧑‍🎨</div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #2563eb; margin-bottom: 4px;">主人視角：小主人</h3>
+          <div style="font-size: 12px; color: #1d4ed8; font-weight: 700; margin-bottom: 8px;">【第三人稱主人視角】</div>
+          <p class="role-desc" style="font-size: 12.5px; color: #57534e; line-height: 1.5; text-align: left;">
+            • 大叫「小女生——」呼喚貓咪奔來<br>
             • 坐在沙發上揮舞逗貓棒、摸摸下巴<br>
-            • 答對國語題目收集小魚乾餵食貓咪<br>
-            • 體驗人與寵物溫馨的陪伴與依賴！
+            • 觀察小女生把前腳搭在大腿上撒嬌<br>
+            • 收集小魚乾餵食並陪伴小女生
           </p>
-          <button class="btn-confirm" style="margin-top: 16px; width: 100%; background: linear-gradient(135deg, #3b82f6, #2563eb);">選我！當暖心鏟屎官 🏡</button>
+          <button class="btn-confirm" style="margin-top: 12px; width: 100%; padding: 9px 12px; font-size: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb);">選我！以主人視角開始 🏡</button>
         </div>
       </div>
     </div>
@@ -340,10 +342,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261027_6"></script>
-  <script src="js/audio.js?v=20261027_6"></script>
-  <script src="js/curriculum.js?v=20261027_6"></script>
-  <script src="js/game.js?v=20261027_6"></script>
+  <script src="js/stations.js?v=20261027_7"></script>
+  <script src="js/audio.js?v=20261027_7"></script>
+  <script src="js/curriculum.js?v=20261027_7"></script>
+  <script src="js/game.js?v=20261027_7"></script>
 
   <script>
     function selectRole(role) {
@@ -356,6 +358,9 @@
 
       if (window.game) {
         window.game.setRole(role);
+      }
+      if (window.curriculumSystem) {
+        window.curriculumSystem.confirmRoleAndStart(role);
       }
     }
 
