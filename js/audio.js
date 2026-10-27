@@ -421,6 +421,29 @@ class SoundSystem {
   }
 
   /**
+   * 答錯提示音別名相容
+   */
+  playMistake() {
+    return this.playError();
+  }
+
+  /**
+   * 隨機/指定貓叫聲別名相容
+   */
+  playMeowRandom(categoryOrId = 'sweet') {
+    return this.playRealMeow(categoryOrId || 'sweet');
+  }
+
+  /**
+   * 小主人溫柔語音播放
+   */
+  playOwnerVoice(key = 'praise') {
+    if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
+      return window.voiceSystem.speak(key);
+    }
+  }
+
+  /**
    * 溫馨真實背景音樂播放器 (audio/bgm.mp3 循環播放)
    */
   initBGM() {

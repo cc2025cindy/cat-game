@@ -66,6 +66,7 @@ class GameEngine {
   }
 
   init() {
+    this.initFurnitureData();
     this.setupScene();
     this.setupLights();
     this.buildApartment();
@@ -76,6 +77,7 @@ class GameEngine {
     this.setupOrbitCameraControls();
     this.setupMobileControls();
     this.setupFloatingMarkers();
+    this.setupRaycasterClicks();
 
     this.proxCard = document.getElementById('proximity-card');
     this.setRole('cat');
@@ -372,6 +374,8 @@ class GameEngine {
     // 沙發移至南側對向 (z = 1.4)，面朝北方電視機，空間大氣開闊
     sofaGroup.position.set(0, 0, 1.4);
     sofaGroup.rotation.y = Math.PI;
+    sofaGroup.userData = { id: 'sofa', name: '溫馨沙發' };
+    this.sofaGroup = sofaGroup;
     this.scene.add(sofaGroup);
   }
 
@@ -476,6 +480,8 @@ class GameEngine {
     winGroup.add(pot);
 
     winGroup.position.set(4, 0, -3.85);
+    winGroup.userData = { id: 'window', name: '陽台落地窗' };
+    this.winGroup = winGroup;
     this.scene.add(winGroup);
 
     this.createButterfly();
@@ -517,6 +523,8 @@ class GameEngine {
     doorGroup.add(doorPanel);
 
     doorGroup.position.set(-4.4, 0, -2.2);
+    doorGroup.userData = { id: 'door', name: '浴室洗手間門口' };
+    this.doorGroup = doorGroup;
     this.scene.add(doorGroup);
   }
 
@@ -626,6 +634,8 @@ class GameEngine {
 
     // 定位貓跳台於右前方靠窗落地明亮處 (x = 2.8, z = -2.5)
     treeGroup.position.set(2.8, 0, -2.5);
+    treeGroup.userData = { id: 'cattree', name: '多層豪華貓跳台' };
+    this.treeGroup = treeGroup;
     this.scene.add(treeGroup);
   }
 
@@ -704,6 +714,8 @@ class GameEngine {
 
     // 電視櫃居中陳設於正北主牆面中央 (x = 0, z = -3.72)
     tvGroup.position.set(0, 0, -3.72);
+    tvGroup.userData = { id: 'tv', name: '水族館電視機' };
+    this.tvGroup = tvGroup;
     this.scene.add(tvGroup);
   }
 
@@ -739,6 +751,7 @@ class GameEngine {
     this.yarnBallGroup.add(trailLine);
 
     this.yarnBallGroup.position.set(0.7, 0, -0.4);
+    this.yarnBallGroup.userData = { id: 'yarn', name: '彩色毛線球' };
     toysGroup.add(this.yarnBallGroup);
 
     // 2. 貓薄荷小魚玩偶 (Catnip Fish Plush)
@@ -800,6 +813,7 @@ class GameEngine {
     this.toyMouse.add(key);
 
     this.toyMouse.position.set(1.8, 0, 0.6);
+    this.toyMouse.userData = { id: 'mouse', name: '發條小老鼠' };
     toysGroup.add(this.toyMouse);
 
     // 4. 圓形瓦楞紙貓抓盆 (Scratcher Bowl)
@@ -815,6 +829,8 @@ class GameEngine {
     bowlGroup.add(pad);
 
     bowlGroup.position.set(-2.8, 0, 0.8);
+    bowlGroup.userData = { id: 'bowl', name: '點心餐盤' };
+    this.bowlGroup = bowlGroup;
     toysGroup.add(bowlGroup);
 
     this.scene.add(toysGroup);
@@ -1836,7 +1852,7 @@ class GameEngine {
 
       if (key === 'e') this.interactWithNearby();
       if (key === 'v') this.toggleView();
-      if (key === 'f') this.toggleSitSofa();
+      if (key === 'f') this.openFurnitureModal('sofa');
 
       if (this.viewMode === 'cat') {
         if (key === ' ' || e.code === 'Space') this.catJump();
@@ -1962,45 +1978,491 @@ class GameEngine {
     this.spawnHeartsNear(this.catPos);
   }
 
+  /* ==========================================================================
+     家具使用畫面 (Furniture Usage Modal) 與 3D 觸控/點擊 Raycaster 系統
+     ========================================================================== */
+  initFurnitureData() {
+    this.FURNITURE_DATA = {
+      sofa: {
+        icon: '🛋️',
+        title: '溫馨客廳大沙發',
+        tag: '課文第三段・沙發陪伴',
+        desc: '課文中描寫：「小女生喜歡四腳朝天躺在沙發上，毛茸茸的肚子像蓋上了一條白色小被子；也常把前腳放在我的大腿上，輕輕的喵個不停，像個可愛的小孩，陪伴我和家人說話。」',
+        actions: [
+          {
+            icon: '🛌',
+            label: '跳上沙發翻肚睡覺',
+            badge: '恢復 20 HP',
+            run: () => {
+              this.catPos.set(0.7, 0.58, 1.35);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.setCatAIState('sleep_belly_up');
+              if (window.soundSystem) {
+                window.soundSystem.playRealMeow('trill');
+                window.soundSystem.startPurr();
+              }
+              if (window.curriculumSystem) {
+                window.curriculumSystem.G.hp = Math.min(100, window.curriculumSystem.G.hp + 20);
+                window.curriculumSystem.updateHUD();
+              }
+              this.showPrompt('🐱 小女生在沙發座墊上四腳朝天，露出軟綿綿白肚子，舒服得呼嚕呼嚕！💖');
+            }
+          },
+          {
+            icon: '🐾',
+            label: '前腳搭在大腿上撒嬌',
+            badge: '親密陪伴',
+            run: () => {
+              this.catPos.set(0.45, 0.58, 1.35);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'rub_leg';
+              if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
+              if (window.voiceSystem) {
+                window.voiceSystem.speak('像個可愛的小孩，陪伴我和家人說話。', '小主人（摸摸頭）');
+              }
+              this.showPrompt('🐱 小女生把前腳輕輕搭在你的大腿上，輕輕的喵個不停！🥰');
+            }
+          },
+          {
+            icon: '🚶',
+            label: '跳下沙發漫步',
+            badge: '自由活動',
+            run: () => {
+              this.catPos.set(0.5, 0, 0.6);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'walk';
+              if (window.soundSystem) window.soundSystem.playRealMeow('happy');
+              this.showPrompt('🐱 小女生輕盈地跳下沙發，在客廳地毯上漫步！🐾');
+            }
+          }
+        ]
+      },
+      cattree: {
+        icon: '🪜',
+        title: '多層豪華貓跳台',
+        tag: '登高巡視・身手矯健',
+        desc: '客廳 corner 的三層高聳貓跳台，有鑽洞小貓窩與最高處瞭望台，小女生可以登高巡視全客廳領地，或撥弄懸掛的小毛球！',
+        actions: [
+          {
+            icon: '🧗',
+            label: '爬上第 1 層貓窩平台',
+            badge: '居高臨下',
+            run: () => {
+              this.catPos.set(2.7, 0.65, -2.45);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'sit';
+              if (window.soundSystem) window.soundSystem.playRealMeow('playful');
+              this.showPrompt('🐱 小女生一躍跳上第一層貓窩平台，好奇地探出小腦袋！✨');
+            }
+          },
+          {
+            icon: '🌟',
+            label: '登頂最高觀景瞭望台',
+            badge: '海拔 1.55m',
+            run: () => {
+              this.catPos.set(3.0, 1.55, -2.65);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'sit';
+              if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
+              this.showPrompt('🐱 小女生登上最高瞭望台！威風凜凜巡視客廳領地～好神氣！👑');
+            }
+          },
+          {
+            icon: '🧶',
+            label: '肉球撥弄懸掛毛球',
+            badge: '爪爪遊戲',
+            run: () => {
+              this.catPos.set(2.8, 0, -2.2);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              if (window.soundSystem) window.soundSystem.playRealMeow('playful');
+              this.showPrompt('🐾 小女生伸出粉嫩肉球撥弄毛球，小球左右擺動搖晃！💖');
+            }
+          },
+          {
+            icon: '🐾',
+            label: '平穩跳下跳台',
+            badge: '著地漫步',
+            run: () => {
+              this.catPos.set(2.5, 0, -1.8);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'walk';
+              if (window.soundSystem) window.soundSystem.playRealMeow('happy');
+              this.showPrompt('🐱 小女生身姿輕巧地跳回地板！🐾');
+            }
+          }
+        ]
+      },
+      tv: {
+        icon: '📺',
+        title: '水族館電視機',
+        tag: '客廳視聽・游動小魚',
+        desc: '電視螢幕播放著生動的水族館畫面，裡面有悠游穿梭的小金魚與緩緩升起的氣泡。小女生常常端坐在電視前看得目不轉睛！',
+        actions: [
+          {
+            icon: '🐟',
+            label: '端坐電視前看金魚游動',
+            badge: '專注凝視',
+            run: () => {
+              this.catPos.set(0, 0, -2.8);
+              if (this.cat) {
+                this.cat.position.copy(this.catPos);
+                this.cat.rotation.y = Math.PI / 2;
+              }
+              this.catState = 'sit';
+              if (window.soundSystem) window.soundSystem.playRealMeow('alert');
+              this.showPrompt('🐱 小女生坐在電視前，小腦袋隨著金魚游動左右擺動！🐟✨');
+            }
+          },
+          {
+            icon: '🐾',
+            label: '伸爪好奇輕拍電視螢幕',
+            badge: '趣味互動',
+            run: () => {
+              this.catPos.set(0, 0, -3.2);
+              if (this.cat) {
+                this.cat.position.copy(this.catPos);
+                this.cat.rotation.y = Math.PI / 2;
+              }
+              if (window.soundSystem) window.soundSystem.playRealMeow('playful');
+              this.showPrompt('🐾 小女生站起伸起前爪輕拍電視螢幕玻璃，驚奇地盯著水波紋！📺✨');
+            }
+          }
+        ]
+      },
+      yarn: {
+        icon: '🧶',
+        title: '柔軟彩色毛線球',
+        tag: '活力追逐・歡樂翻滾',
+        desc: '鋪在地毯上的色彩鮮豔毛線球，帶著長長的拖曳尾巴。小女生最愛用雙爪推撥，在客廳裡追逐滾動！',
+        actions: [
+          {
+            icon: '🐾',
+            label: '肉球撥弄毛線球滾動',
+            badge: '追逐玩耍',
+            run: () => this.interactYarn()
+          },
+          {
+            icon: '💖',
+            label: '抱著毛線球翻滾玩耍',
+            badge: '愛心特效',
+            run: () => {
+              this.catPos.set(0.7, 0, -0.4);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              if (window.soundSystem) window.soundSystem.playRealMeow('playful');
+              this.spawnHeartsNear(new THREE.Vector3(0.7, 0.2, -0.4));
+              this.showPrompt('🧶 小女生抱住毛線球蹬後腿，開心地在地上打滾！🥰💖');
+            }
+          }
+        ]
+      },
+      mouse: {
+        icon: '🐭',
+        title: '歡樂發條小老鼠',
+        tag: '機敏撲抓・專注狩獵',
+        desc: '金黃發條轉緊後會在地面疾馳的小老鼠，常常激發小女生天生的捕獵本能！',
+        actions: [
+          {
+            icon: '🌪️',
+            label: '上緊發條讓老鼠奔跑',
+            badge: '疾馳旋轉',
+            run: () => this.interactToyMouse()
+          },
+          {
+            icon: '🐾',
+            label: '雙爪精準按住小老鼠',
+            badge: '捕獲成功',
+            run: () => {
+              this.catPos.set(1.8, 0, 0.6);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              if (window.soundSystem) window.soundSystem.playRealMeow('happy');
+              this.showPrompt('🐭 小女生壓低身體向前猛撲，精準用肉球按住了小老鼠！🐾✨');
+            }
+          }
+        ]
+      },
+      bowl: {
+        icon: '🍲',
+        title: '小女生專屬點心餐盤',
+        tag: '美味小魚乾・體力補滿',
+        desc: '擺放在客廳角落的乾淨小餐盤與瓦楞紙貓抓盆，隨時準備了新鮮小魚乾與清涼水！',
+        actions: [
+          {
+            icon: '🐟',
+            label: '大口享用香脆小魚乾',
+            badge: '體力補滿 100 HP',
+            run: () => {
+              this.catPos.set(-2.6, 0, 0.8);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'sit';
+              if (window.soundSystem) {
+                window.soundSystem.playRealMeow('hungry');
+                window.soundSystem.playSuccess();
+              }
+              if (window.curriculumSystem) {
+                window.curriculumSystem.G.hp = 100;
+                window.curriculumSystem.updateHUD();
+              }
+              this.showPrompt('🐟 小女生大口嚼嚼香脆小魚乾，體力完全補滿 100 HP！活力充沛！💪✨');
+            }
+          },
+          {
+            icon: '🥛',
+            label: '大口喝新鮮乾淨的泉水',
+            badge: '補充水分',
+            run: () => {
+              this.catPos.set(-2.8, 0, 0.8);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
+              this.showPrompt('🥛 小女生舔舔新鮮泉水，發出滿足咕嚕聲！💧');
+            }
+          }
+        ]
+      },
+      window: {
+        icon: '🪟',
+        title: '陽台明亮落地窗',
+        tag: '課本第 10 種貓叫聲・雀躍鳥鳴',
+        desc: '陽光灑落的明亮落地窗，窗外樹梢有小鳥啼鳴與飛舞的蝴蝶。小女生看到窗外動態時，牙齒會發出快速雀躍打顫的碎鳴（Chatter 叫聲）！',
+        actions: [
+          {
+            icon: '🐦',
+            label: '看窗外小鳥牙齒打顫',
+            badge: '雀躍顫音',
+            run: () => {
+              this.catPos.set(3.6, 0, -3.2);
+              if (this.cat) {
+                this.cat.position.copy(this.catPos);
+                this.cat.rotation.y = 0;
+              }
+              if (window.soundSystem) window.soundSystem.playRealMeow('chatter');
+              this.showPrompt('🐦 小女生看見窗外飛過的小鳥，喉嚨發出興奮的牙齒打顫雀躍顫音！✨');
+            }
+          },
+          {
+            icon: '☀️',
+            label: '在窗邊曬暖洋洋日光浴',
+            badge: '放鬆伸懶腰',
+            run: () => {
+              this.catPos.set(3.8, 0, -3.0);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.setCatAIState('sleep_belly_up');
+              if (window.soundSystem) window.soundSystem.playRealMeow('trill');
+              this.showPrompt('☀️ 小女生趴在暖暖的陽光斑塊中伸伸懶腰，舒服得瞇起了眼睛～🥰');
+            }
+          }
+        ]
+      },
+      door: {
+        icon: '🚪',
+        title: '浴室洗手間門口',
+        tag: '課文第一段・門外守候',
+        desc: '課文第一段：「我上洗手間，牠會喵喵叫；我關門洗澡，牠就叫得更大聲。只要我在家，牠都會緊緊的跟在我身邊。」',
+        actions: [
+          {
+            icon: '📢',
+            label: '在門口大聲呼喚喵叫',
+            badge: '深情呼喚',
+            run: () => {
+              this.catPos.set(-3.8, 0, -2.2);
+              if (this.cat) {
+                this.cat.position.copy(this.catPos);
+                this.cat.rotation.y = -Math.PI / 2;
+              }
+              if (window.soundSystem) window.soundSystem.playRealMeow('calling');
+              if (window.voiceSystem) {
+                window.voiceSystem.speak('小女生乖～我洗完澡就馬上出來陪你！', '小主人（隔門呼應）');
+              }
+              this.showPrompt('🚪 小女生坐在門口大聲呼喚，主人在門內溫柔地給予回應！💕');
+            }
+          },
+          {
+            icon: '🐾',
+            label: '在門口地墊上靜靜守候',
+            badge: '形影不離',
+            run: () => {
+              this.catPos.set(-3.6, 0, -2.0);
+              if (this.cat) this.cat.position.copy(this.catPos);
+              this.catState = 'sit';
+              if (window.soundSystem) window.soundSystem.playRealMeow('sweet');
+              this.showPrompt('🐾 小女生乖巧地趴在門口踏墊上，等待主人開門的一刻！🥰');
+            }
+          }
+        ]
+      }
+    };
+  }
+
+  openFurnitureModal(id) {
+    const data = this.FURNITURE_DATA ? this.FURNITURE_DATA[id] : null;
+    if (!data) return;
+
+    const modal = document.getElementById('furniture-modal');
+    if (!modal) return;
+
+    const iconEl = document.getElementById('furn-icon');
+    const tagEl = document.getElementById('furn-tag');
+    const titleEl = document.getElementById('furn-title');
+    const descEl = document.getElementById('furn-desc');
+    const actionsEl = document.getElementById('furn-actions');
+
+    if (iconEl) iconEl.textContent = data.icon;
+    if (tagEl) tagEl.textContent = data.tag;
+    if (titleEl) titleEl.textContent = data.title;
+    if (descEl) descEl.innerHTML = data.desc;
+
+    if (actionsEl) {
+      actionsEl.innerHTML = '';
+      data.actions.forEach((act) => {
+        const btn = document.createElement('button');
+        btn.className = 'furn-action-btn';
+        btn.innerHTML = `
+          <div class="btn-left">
+            <span style="font-size:22px;">${act.icon}</span>
+            <span>${act.label}</span>
+          </div>
+          <span class="btn-badge">${act.badge || '立即使用'}</span>
+        `;
+        btn.onclick = () => {
+          this.closeFurnitureModal();
+          act.run();
+          if (window.soundSystem) window.soundSystem.playClick();
+        };
+        actionsEl.appendChild(btn);
+      });
+    }
+
+    modal.classList.add('active');
+    if (window.soundSystem) window.soundSystem.playClick();
+  }
+
+  closeFurnitureModal() {
+    const modal = document.getElementById('furniture-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  setupRaycasterClicks() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let pointerDownPos = { x: 0, y: 0 };
+    let pointerDownTime = 0;
+
+    const onPointerDown = (e) => {
+      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      pointerDownPos = { x: clientX, y: clientY };
+      pointerDownTime = performance.now();
+    };
+
+    const onPointerUp = (e) => {
+      const clientX = e.clientX || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
+      const clientY = e.clientY || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
+      const dist = Math.hypot(clientX - pointerDownPos.x, clientY - pointerDownPos.y);
+      const timeDiff = performance.now() - pointerDownTime;
+
+      // 點擊判定：位移小於 14px 且時長小於 450ms (排除鏡頭拖曳旋轉)
+      if (dist < 14 && timeDiff < 450) {
+        if (e.target && (e.target.closest('button') || e.target.closest('.modal-card') || e.target.closest('#pad') || e.target.closest('.top-bar') || e.target.closest('.action-dock'))) {
+          return;
+        }
+
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, this.camera);
+
+        const clickableTargets = [
+          this.sofaGroup,
+          this.treeGroup,
+          this.tvGroup,
+          this.yarnBallGroup,
+          this.toyMouse,
+          this.bowlGroup,
+          this.winGroup,
+          this.doorGroup,
+          ...(this.glowingAuras ? this.glowingAuras.map(a => a.group) : [])
+        ].filter(Boolean);
+
+        const intersects = raycaster.intersectObjects(clickableTargets, true);
+        if (intersects.length > 0) {
+          let curr = intersects[0].object;
+          let foundId = null;
+          while (curr && curr !== this.scene) {
+            if (curr.userData && curr.userData.id) {
+              foundId = curr.userData.id;
+              break;
+            }
+            curr = curr.parent;
+          }
+
+          if (foundId) {
+            this.openFurnitureModal(foundId);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('pointerdown', onPointerDown, { passive: true });
+    window.addEventListener('pointerup', onPointerUp, { passive: true });
+  }
+
   setupFloatingMarkers() {
     this.interactiveSpots = [
       {
         id: 'sofa',
-        name: '摸摸白肚子',
-        icon: '🐱',
+        name: '溫馨沙發 (使用)',
+        icon: '🛋️',
         pos: new THREE.Vector3(0.7, 0.7, 1.35),
-        action: () => {
-          this.makeCatHappy();
-          if (window.soundSystem) window.soundSystem.playMeow('sweet');
-        }
+        action: () => this.openFurnitureModal('sofa')
       },
       {
         id: 'cattree',
-        name: '貓跳台樂園',
+        name: '貓跳台樂園 (使用)',
         icon: '🪜',
         pos: new THREE.Vector3(2.8, 1.1, -2.5),
-        action: () => this.interactCatTree()
+        action: () => this.openFurnitureModal('cattree')
       },
       {
         id: 'tv',
-        name: '水族館電視機',
+        name: '水族館電視 (使用)',
         icon: '📺',
         pos: new THREE.Vector3(0, 1.0, -3.7),
-        action: () => this.interactTV()
+        action: () => this.openFurnitureModal('tv')
       },
       {
         id: 'yarn',
-        name: '玩毛線球',
+        name: '玩毛線球 (使用)',
         icon: '🧶',
         pos: new THREE.Vector3(0.7, 0.25, -0.4),
-        action: () => this.interactYarn()
+        action: () => this.openFurnitureModal('yarn')
       },
       {
         id: 'mouse',
-        name: '追發條小老鼠',
+        name: '追發條小老鼠 (使用)',
         icon: '🐭',
         pos: new THREE.Vector3(1.8, 0.25, 0.6),
-        action: () => this.interactToyMouse()
+        action: () => this.openFurnitureModal('mouse')
+      },
+      {
+        id: 'bowl',
+        name: '點心餐盤 (使用)',
+        icon: '🍲',
+        pos: new THREE.Vector3(-2.8, 0.25, 0.8),
+        action: () => this.openFurnitureModal('bowl')
+      },
+      {
+        id: 'window',
+        name: '陽台落地窗 (使用)',
+        icon: '🪟',
+        pos: new THREE.Vector3(3.8, 1.1, -3.6),
+        action: () => this.openFurnitureModal('window')
+      },
+      {
+        id: 'door',
+        name: '浴室洗手間 (使用)',
+        icon: '🚪',
+        pos: new THREE.Vector3(-4.2, 1.1, -2.2),
+        action: () => this.openFurnitureModal('door')
       }
     ];
 
@@ -2012,6 +2474,7 @@ class GameEngine {
       // 1. 3D 物品發光光環
       const auraGroup = new THREE.Group();
       auraGroup.position.copy(spot.pos);
+      auraGroup.userData = { id: spot.id, name: spot.name };
 
       // 地面脈動光環 (Pulsing Glow Ring)
       const ringGeo = new THREE.RingGeometry(0.24, 0.38, 32);
@@ -2025,6 +2488,7 @@ class GameEngine {
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = -Math.PI / 2;
       ringMesh.position.y = 0.02 - spot.pos.y; // 保持在地面高度
+      ringMesh.userData = { id: spot.id };
       auraGroup.add(ringMesh);
 
       // 漂浮微光晶體 (Floating Shimmer Crystal)
@@ -2040,6 +2504,7 @@ class GameEngine {
       });
       const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
       crystalMesh.position.y = 0.25;
+      crystalMesh.userData = { id: spot.id };
       auraGroup.add(crystalMesh);
 
       this.scene.add(auraGroup);
@@ -2063,6 +2528,13 @@ class GameEngine {
 
       return { spot, bubble, aura: auraGroup };
     });
+  }
+
+  interactWithNearby() {
+    if (this.nearbySpot) {
+      this.openFurnitureModal(this.nearbySpot.id);
+      if (window.soundSystem) window.soundSystem.playClick();
+    }
   }
 
   interactWithNearby() {
@@ -2153,24 +2625,26 @@ class GameEngine {
   }
 
   updatePlayerControlledCat(delta, time) {
-    let moveDir = new THREE.Vector3();
-    if (this.keys['w'] || this.keys['arrowup']) moveDir.z -= 1;
-    if (this.keys['s'] || this.keys['arrowdown']) moveDir.z += 1;
-    if (this.keys['a'] || this.keys['arrowleft']) moveDir.x -= 1;
-    if (this.keys['d'] || this.keys['arrowright']) moveDir.x += 1;
+    let inputForward = 0;
+    let inputRight = 0;
+
+    if (this.keys['w'] || this.keys['arrowup']) inputForward += 1;
+    if (this.keys['s'] || this.keys['arrowdown']) inputForward -= 1;
+    if (this.keys['d'] || this.keys['arrowright']) inputRight += 1;
+    if (this.keys['a'] || this.keys['arrowleft']) inputRight -= 1;
 
     // 手機虛擬搖桿輸入整合 (來自 #pad 與 window.__bird.JOY)
     const joy = (window.__bird && window.__bird.JOY) ? window.__bird.JOY : { x: 0, y: 0 };
     if (joy.x !== 0 || joy.y !== 0) {
-      moveDir.x += joy.x;
-      moveDir.z += joy.y;
+      inputRight += joy.x;
+      inputForward -= joy.y; // 向上推 joy.y 為負，轉換為正向 forward
     } else if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
-      moveDir.x += this.joystickVector.x;
-      moveDir.z += this.joystickVector.z;
+      inputRight += this.joystickVector.x;
+      inputForward -= this.joystickVector.z;
     }
 
-    const len = moveDir.length();
-    const isMoving = len > 0.01;
+    const inputLen = Math.hypot(inputRight, inputForward);
+    const isMoving = inputLen > 0.01;
 
     if (isMoving) {
       if (this.catState === 'sleep_belly_up') {
@@ -2178,9 +2652,18 @@ class GameEngine {
         if (window.soundSystem) window.soundSystem.stopPurr();
       }
 
+      // 將螢幕相對之方向輸入向量，根據相機水平視角 (cameraYaw) 轉換為世界座標
+      const forwardX = -Math.sin(this.cameraYaw);
+      const forwardZ = -Math.cos(this.cameraYaw);
+      const rightX = Math.cos(this.cameraYaw);
+      const rightZ = -Math.sin(this.cameraYaw);
+
+      const worldX = inputForward * forwardX + inputRight * rightX;
+      const worldZ = inputForward * forwardZ + inputRight * rightZ;
+      const normDir = new THREE.Vector3(worldX, 0, worldZ).normalize();
+
       // 保留類比幅度 (analog speed scaling)
-      const normDir = moveDir.clone().divideScalar(len);
-      const analogScale = Math.min(1.0, len);
+      const analogScale = Math.min(1.0, inputLen);
       const currentSpeed = this.catSpeed * analogScale;
 
       const nextPos = this.catPos.clone();
@@ -2270,7 +2753,8 @@ class GameEngine {
   }
 
   updatePlayerControlledHuman(delta, time) {
-    const hasJoy = this.joystickVector && Math.hypot(this.joystickVector.x, this.joystickVector.z) > 0.3;
+    const joyCheck = (window.__bird && window.__bird.JOY) ? window.__bird.JOY : { x: 0, y: 0 };
+    const hasJoy = Math.hypot(joyCheck.x, joyCheck.y) > 0.3 || (this.joystickVector && Math.hypot(this.joystickVector.x, this.joystickVector.z) > 0.3);
     if (this.isSitting) {
       if (this.keys['w'] || this.keys['s'] || this.keys['a'] || this.keys['d'] || hasJoy) {
         this.toggleSitSofa();
@@ -2279,34 +2763,50 @@ class GameEngine {
     }
 
     const moveSpeed = 3.5;
-    let moveDir = new THREE.Vector3();
+    let inputForward = 0;
+    let inputRight = 0;
 
-    if (this.keys['w'] || this.keys['arrowup']) moveDir.z -= 1;
-    if (this.keys['s'] || this.keys['arrowdown']) moveDir.z += 1;
-    if (this.keys['a'] || this.keys['arrowleft']) moveDir.x -= 1;
-    if (this.keys['d'] || this.keys['arrowright']) moveDir.x += 1;
+    if (this.keys['w'] || this.keys['arrowup']) inputForward += 1;
+    if (this.keys['s'] || this.keys['arrowdown']) inputForward -= 1;
+    if (this.keys['d'] || this.keys['arrowright']) inputRight += 1;
+    if (this.keys['a'] || this.keys['arrowleft']) inputRight -= 1;
 
     // 手機虛擬搖桿輸入整合
-    if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
-      moveDir.x += this.joystickVector.x;
-      moveDir.z += this.joystickVector.z;
+    const joy = (window.__bird && window.__bird.JOY) ? window.__bird.JOY : { x: 0, y: 0 };
+    if (joy.x !== 0 || joy.y !== 0) {
+      inputRight += joy.x;
+      inputForward -= joy.y;
+    } else if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
+      inputRight += this.joystickVector.x;
+      inputForward -= this.joystickVector.z;
     }
 
-    const isMoving = moveDir.lengthSq() > 0;
+    const inputLen = Math.hypot(inputRight, inputForward);
+    const isMoving = inputLen > 0.01;
 
     if (isMoving) {
-      moveDir.normalize();
+      const forwardX = -Math.sin(this.cameraYaw);
+      const forwardZ = -Math.cos(this.cameraYaw);
+      const rightX = Math.cos(this.cameraYaw);
+      const rightZ = -Math.sin(this.cameraYaw);
+
+      const worldX = inputForward * forwardX + inputRight * rightX;
+      const worldZ = inputForward * forwardZ + inputRight * rightZ;
+      const normDir = new THREE.Vector3(worldX, 0, worldZ).normalize();
+
+      const analogScale = Math.min(1.0, inputLen);
+      const currentSpeed = moveSpeed * analogScale;
 
       const nextPos = this.playerPos.clone();
-      nextPos.x += moveDir.x * moveSpeed * delta;
-      nextPos.z += moveDir.z * moveSpeed * delta;
+      nextPos.x += normDir.x * currentSpeed * delta;
+      nextPos.z += normDir.z * currentSpeed * delta;
 
       const resolved = this.resolveCollision(nextPos, 0.32, this.isSitting, false);
       this.playerPos.x = resolved.x;
       this.playerPos.z = resolved.z;
 
       this.player.position.copy(this.playerPos);
-      this.player.rotation.y = Math.atan2(moveDir.x, moveDir.z);
+      this.player.rotation.y = Math.atan2(normDir.x, normDir.z);
 
       const stepCycle = Math.sin(time * 10);
       if (this.playerNodes.legL) this.playerNodes.legL.rotation.x = stepCycle * 0.55;
@@ -2528,8 +3028,8 @@ class GameEngine {
       this.glowingAuras.forEach((aura, i) => {
         const spot = this.interactiveSpots[i];
         if (!spot) return;
-        const dist = currentHeroPos.distanceTo(spot.pos);
-        const isNear = dist < 1.35;
+        const distXZ = Math.hypot(currentHeroPos.x - spot.pos.x, currentHeroPos.z - spot.pos.z);
+        const isNear = distXZ < 1.75;
 
         // 旋轉晶體
         aura.crystal.rotation.y = time * 2.2 + aura.phase;
@@ -2546,20 +3046,20 @@ class GameEngine {
       });
     }
 
-    // 2. 找出最接近且在觸碰範圍內的物品 (dist < 1.35m)
+    // 2. 找出最接近且在觸碰範圍內的物品 (distXZ < 1.75m)
     this.spotElements.forEach(({ spot }) => {
-      const dist = currentHeroPos.distanceTo(spot.pos);
-      if (dist < 1.35 && dist < closestDist) {
-        closestDist = dist;
+      const distXZ = Math.hypot(currentHeroPos.x - spot.pos.x, currentHeroPos.z - spot.pos.z);
+      if (distXZ < 1.75 && distXZ < closestDist) {
+        closestDist = distXZ;
         closestSpot = spot;
       }
     });
 
     this.nearbySpot = closestSpot;
 
-    // 3. 更新 2D 氣泡提示：僅當玩家靠近物品 (< 1.35m) 且為當前焦點時才單獨顯示，其餘全數隱藏保持畫面乾淨！
+    // 3. 更新 2D 氣泡提示：僅當玩家靠近物品 (< 1.75m) 且為當前焦點時才單獨顯示，其餘全數隱藏保持畫面乾淨！
     this.spotElements.forEach(({ spot, bubble }) => {
-      if (closestSpot && spot.id === closestSpot.id && closestDist < 1.35) {
+      if (closestSpot && spot.id === closestSpot.id && closestDist < 1.75) {
         tempV.copy(spot.pos);
         tempV.y += 0.45;
         tempV.project(this.camera);

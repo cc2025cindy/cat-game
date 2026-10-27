@@ -174,9 +174,9 @@
           <span class="btn-icon">🗣️</span>
           <span id="btn-primary-label">與貓咪對話</span>
         </button>
-        <button class="dock-btn" id="btn-sit-sofa" onclick="game.toggleSitSofa()">
+        <button class="dock-btn" id="btn-sit-sofa" onclick="game.openFurnitureModal('sofa')">
           <span class="btn-icon">🛋️</span>
-          <span id="btn-sit-label">坐上沙發 (F)</span>
+          <span id="btn-sit-label">客廳沙發 (F)</span>
         </button>
         <button class="dock-btn" id="btn-feed-action" onclick="game.feedCat()">
           <span class="btn-icon">🐟</span>
@@ -227,6 +227,7 @@
   <!-- 題目問答模態視窗 (Quiz Question Modal) -->
   <div class="modal-overlay" id="quiz-modal">
     <div class="modal-card" style="max-width: 620px;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('quiz-modal')" title="關閉返回遊戲">✕</button>
       <div class="modal-header">
         <span class="modal-tag" id="quiz-badge">PIRLS【擷取訊息】・第 1 題</span>
         <h2 class="modal-title" id="quiz-question" style="font-size: 18px; margin-top: 8px;">題目...</h2>
@@ -279,6 +280,22 @@
       <div class="modal-footer" style="display:flex; gap:8px;">
         <input id="stagesTeacherPw" type="password" placeholder="請輸入教師密碼" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
         <button class="btn-confirm" onclick="curriculumSystem.unlockAllStages(document.getElementById('stagesTeacherPw').value)">密碼解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 家具使用與互動面板 (Furniture Usage Modal) -->
+  <div class="modal-overlay" id="furniture-modal" style="z-index: 150;">
+    <div class="modal-card" style="max-width: 540px; text-align: center; padding: 26px 22px;">
+      <button class="modal-close" onclick="game.closeFurnitureModal()">✕</button>
+      <div style="font-size: 46px; margin-bottom: 4px;" id="furn-icon">🛋️</div>
+      <span class="modal-tag" id="furn-tag" style="background:#fef3c7; color:#b45309; font-size:12px; font-weight:800; padding:4px 12px; border-radius:12px;">課文家具互動</span>
+      <h2 class="modal-title" id="furn-title" style="color: #9a3412; margin: 8px 0 4px 0; font-size: 22px; font-weight: 900;">溫馨客廳沙發</h2>
+      <p id="furn-desc" style="font-size: 14.5px; line-height: 1.7; color: #451a03; background: #fff7ed; padding: 14px 16px; border-radius: 14px; margin: 14px 0 16px 0; text-align: left; border: 1.5px solid #fed7aa;">
+        描述內容...
+      </p>
+      <div id="furn-actions" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- 動態功能按鈕 -->
       </div>
     </div>
   </div>

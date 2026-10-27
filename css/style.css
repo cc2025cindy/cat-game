@@ -355,6 +355,47 @@ rt {
   border-color: #f59e0b transparent transparent transparent;
 }
 
+/* 家具使用選項按鈕 (立體萌系卡片風格) */
+.furn-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 18px;
+  background: #ffffff;
+  border: 2px solid #fed7aa;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  color: #78350f;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.furn-action-btn:hover {
+  background: #fff7ed;
+  border-color: #f59e0b;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.25);
+}
+.furn-action-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+.furn-action-btn .btn-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.furn-action-btn .btn-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d97706;
+  background: #fef3c7;
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
 /* 模態視窗（遊戲關卡彈出卡片） */
 .modal-overlay {
   position: fixed;

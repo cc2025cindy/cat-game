@@ -244,6 +244,7 @@ class CurriculumSystem {
     const modal = document.getElementById('quiz-modal');
     if (!modal) return;
     modal.classList.add('active');
+    modal.classList.remove('hide');
 
     document.getElementById('quiz-badge').innerText = `PIRLS【${q.level}】・第 ${q.no} 題`;
     document.getElementById('quiz-question').innerText = q.q;
@@ -436,11 +437,29 @@ class CurriculumSystem {
 
   checkAnswer(isCorrect, q) {
     const feedback = document.getElementById('quiz-feedback');
+    const optionsContainer = document.getElementById('quiz-options-container');
+
     if (isCorrect) {
-      if (window.soundSystem) {
-        window.soundSystem.playSuccess();
-        window.soundSystem.playMeowRandom();
+      if (optionsContainer) {
+        const allBtns = optionsContainer.querySelectorAll('button');
+        allBtns.forEach(b => {
+          b.style.pointerEvents = 'none';
+        });
       }
+
+      try {
+        if (window.soundSystem) {
+          if (typeof window.soundSystem.playSuccess === 'function') window.soundSystem.playSuccess();
+          if (typeof window.soundSystem.playRealMeow === 'function') {
+            window.soundSystem.playRealMeow('sweet');
+          } else if (typeof window.soundSystem.playMeowRandom === 'function') {
+            window.soundSystem.playMeowRandom('sweet');
+          }
+        }
+      } catch (e) {
+        console.warn('Audio checkAnswer success error:', e);
+      }
+
       this.G.feathers.push(q.no);
       this.updateHUD();
 
@@ -454,9 +473,15 @@ class CurriculumSystem {
         this.runCurrentStep();
       }, 900);
     } else {
-      if (window.soundSystem) {
-        window.soundSystem.playMistake();
+      try {
+        if (window.soundSystem) {
+          if (typeof window.soundSystem.playError === 'function') window.soundSystem.playError();
+          else if (typeof window.soundSystem.playMistake === 'function') window.soundSystem.playMistake();
+        }
+      } catch (e) {
+        console.warn('Audio checkAnswer mistake error:', e);
       }
+
       this.hurt(15);
       this.G.mistakes++;
       this.G.totalMistakes++;
@@ -496,8 +521,16 @@ class CurriculumSystem {
     this.G.cleared.add(this.G.station);
     this.saveGame();
 
-    if (window.soundSystem) {
-      window.soundSystem.playOwnerVoice('praise');
+    try {
+      if (window.soundSystem && typeof window.soundSystem.playOwnerVoice === 'function') {
+        window.soundSystem.playOwnerVoice('praise');
+      } else if (window.voiceSystem && typeof window.voiceSystem.speak === 'function') {
+        window.voiceSystem.speak('praise');
+      } else if (window.soundSystem && typeof window.soundSystem.playSuccess === 'function') {
+        window.soundSystem.playSuccess();
+      }
+    } catch (e) {
+      console.warn('Audio onStationComplete error:', e);
     }
 
     if (this.G.station >= this.ST.length - 1) {
@@ -796,6 +829,9 @@ class CurriculumSystem {
     if (m) {
       m.classList.remove('active');
       m.classList.add('hide');
+    }
+    if (modalId === 'quiz-modal' || modalId === 'station-modal') {
+      this.G.mode = 'explore';
     }
   }
 }
