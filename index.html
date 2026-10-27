@@ -2,7 +2,9 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
   <link rel="stylesheet" href="css/style.css">
   <!-- Three.js 核心庫 (CDN) -->
@@ -91,6 +93,7 @@
       </div>
 
       <div class="controls-top">
+        <button class="icon-btn" id="btn-qrcode" title="手機掃碼遊玩 (QR Code)" onclick="openQrModal()">📱</button>
         <button class="icon-btn" id="btn-soundboard" title="貓叫聲百寶箱 (30種音效)" onclick="openSoundboard()">🐱🎵</button>
         <button class="icon-btn" id="btn-toggle-view" title="切換身分 (V)">🔄</button>
         <button class="icon-btn" id="btn-quiz-hub" title="國語百寶箱 (24題)" onclick="curriculumSystem.openQuizHub('all')">📖</button>
@@ -185,6 +188,28 @@
         </button>
       </div>
     </footer>
+
+    <!-- 手機/平板專屬虛擬搖桿與浮動按鈕 -->
+    <div id="mobile-controls">
+      <!-- 左下角虛擬搖桿 -->
+      <div id="virtual-joystick-zone">
+        <div id="joystick-base">
+          <div id="joystick-thumb"></div>
+        </div>
+      </div>
+
+      <!-- 右下角手機動作按鈕 -->
+      <div id="mobile-action-buttons">
+        <button id="btn-mobile-jump" class="mobile-circle-btn jump-btn" title="跳躍">
+          <span class="btn-icon">🐾</span>
+          <span class="btn-lbl">跳躍</span>
+        </button>
+        <button id="btn-mobile-action" class="mobile-circle-btn action-btn" title="翻肚/坐沙發">
+          <span class="btn-icon" id="mobile-action-icon">✨</span>
+          <span class="btn-lbl" id="mobile-action-label">翻肚</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- 教學關卡模態視窗 (Modal Dialog) -->
@@ -215,6 +240,28 @@
       <div class="modal-footer">
         <button class="btn-confirm" onclick="closeSoundboard()">關閉百寶箱</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 手機遊玩 QR Code 彈窗 (Mobile QR Code Modal) -->
+  <div class="modal-overlay" id="qrcode-modal">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+      <button class="modal-close" onclick="closeQrModal()" title="關閉">✕</button>
+      <div style="font-size: 40px; margin-bottom: 8px;">📱🐱</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #ea580c; margin-bottom: 8px;">用手機 / 平板立即暢玩！</h2>
+      <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
+        拿起手機開啟相機鏡頭，掃描下方 QR Code 即可直接遊玩：
+      </p>
+      <div style="background: white; padding: 14px; border-radius: 18px; display: inline-block; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 2px solid #fed7aa; margin-bottom: 16px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https://cc2025cindy.github.io/cat-game/" alt="手機遊玩 QR Code" style="width: 220px; height: 220px; display: block; border-radius: 8px;" />
+      </div>
+      <div style="background: #fff7ed; padding: 12px; border-radius: 12px; border: 1.5px solid #fed7aa; font-size: 13px; color: #9a3412; line-height: 1.6; margin-bottom: 16px; text-align: left;">
+        ✨ <b>手機觸控優化</b>：<br>
+        • 左下角<b>虛擬搖桿</b>：任意滑動靈活移動<br>
+        • 右下角<b>動作按鈕</b>：隨時跳躍與四腳朝天翻肚<br>
+        • 畫面<b>單指滑動</b>：360° 自由旋轉視角、雙指縮放
+      </div>
+      <button class="btn-confirm" onclick="closeQrModal()" style="width: 100%;">我知道了，繼續遊玩</button>
     </div>
   </div>
 
@@ -309,6 +356,16 @@
         cardEl.classList.add('playing');
         setTimeout(() => cardEl.classList.remove('playing'), 1500);
       }
+    }
+
+    function openQrModal() {
+      const m = document.getElementById('qrcode-modal');
+      if (m) m.classList.add('active');
+    }
+
+    function closeQrModal() {
+      const m = document.getElementById('qrcode-modal');
+      if (m) m.classList.remove('active');
     }
   </script>
 </body>

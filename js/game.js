@@ -37,8 +37,10 @@ class GameEngine {
     this.playerShadow = null;
     this.interactiveSpots = [];
 
-    // 輸入控制
+    // 輸入控制與手機虛擬搖桿
     this.keys = {};
+    this.joystickVector = { x: 0, z: 0 };
+    this.isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     // 主人狀態、骨骼節點與坐姿 (原點為腳底 y = 0)
     this.playerPos = new THREE.Vector3(0, 0, 0.4);
@@ -72,6 +74,7 @@ class GameEngine {
     this.createPlayerAvatar();
     this.setupInputs();
     this.setupOrbitCameraControls();
+    this.setupMobileControls();
     this.setupFloatingMarkers();
 
     this.proxCard = document.getElementById('proximity-card');
@@ -1238,6 +1241,107 @@ class GameEngine {
     });
   }
 
+  setupMobileControls() {
+    const zone = document.getElementById('virtual-joystick-zone');
+    const base = document.getElementById('joystick-base');
+    const thumb = document.getElementById('joystick-thumb');
+    const btnJump = document.getElementById('btn-mobile-jump');
+    const btnAction = document.getElementById('btn-mobile-action');
+
+    if (btnJump) {
+      const handleJump = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        if (this.viewMode === 'cat') {
+          this.catJump();
+        } else {
+          if (this.isSitting) this.toggleSitSofa();
+        }
+      };
+      btnJump.addEventListener('touchstart', handleJump, { passive: false });
+      btnJump.addEventListener('click', handleJump);
+    }
+
+    if (btnAction) {
+      const handleAction = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        if (this.viewMode === 'cat') {
+          this.catRollOver();
+        } else {
+          this.toggleSitSofa();
+        }
+      };
+      btnAction.addEventListener('touchstart', handleAction, { passive: false });
+      btnAction.addEventListener('click', handleAction);
+    }
+
+    if (!zone || !base || !thumb) return;
+
+    let touchId = null;
+    let baseRect = null;
+    let centerX = 0;
+    let centerY = 0;
+    const maxR = 40;
+
+    const handleTouchStart = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (touchId === null) {
+          touchId = t.identifier;
+          baseRect = base.getBoundingClientRect();
+          centerX = baseRect.left + baseRect.width / 2;
+          centerY = baseRect.top + baseRect.height / 2;
+          updateJoystick(t.clientX, t.clientY);
+          break;
+        }
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === touchId) {
+          e.preventDefault();
+          updateJoystick(t.clientX, t.clientY);
+          break;
+        }
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === touchId) {
+          touchId = null;
+          thumb.style.transform = 'translate(-50%, -50%)';
+          this.joystickVector = { x: 0, z: 0 };
+          break;
+        }
+      }
+    };
+
+    const updateJoystick = (clientX, clientY) => {
+      let dx = clientX - centerX;
+      let dy = clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > maxR) {
+        dx = (dx / dist) * maxR;
+        dy = (dy / dist) * maxR;
+      }
+
+      thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+
+      this.joystickVector = {
+        x: dx / maxR,
+        z: dy / maxR
+      };
+    };
+
+    zone.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+  }
+
   getSurfaceHeight(x, z) {
     // 1. 南側沙發座墊區 (頂部高度 0.58)
     if (x >= -1.26 && x <= 1.26 && z >= 0.92 && z <= 1.76) {
@@ -1614,7 +1718,16 @@ class GameEngine {
     const btnPrimary = document.getElementById('btn-primary-action');
     const btnLabel = document.getElementById('btn-primary-label');
 
+    const mJumpIcon = document.querySelector('#btn-mobile-jump .btn-icon');
+    const mJumpLbl = document.querySelector('#btn-mobile-jump .btn-lbl');
+    const mActIcon = document.getElementById('mobile-action-icon');
+    const mActLbl = document.getElementById('mobile-action-label');
+
     if (role === 'cat') {
+      if (mJumpIcon) mJumpIcon.textContent = '🐾';
+      if (mJumpLbl) mJumpLbl.textContent = '跳躍';
+      if (mActIcon) mActIcon.textContent = '✨';
+      if (mActLbl) mActLbl.textContent = '翻肚';
       if (roleStatusText) roleStatusText.textContent = '目前身分：小女生（貓咪視角）';
       if (viewTag) viewTag.textContent = '視角：小女生貓咪視角 (30cm)';
       if (headerAvatar) headerAvatar.textContent = '🐾';
@@ -1633,6 +1746,11 @@ class GameEngine {
         if (window.soundSystem) window.soundSystem.stopPurr();
       }
     } else {
+      if (mJumpIcon) mJumpIcon.textContent = '🚶';
+      if (mJumpLbl) mJumpLbl.textContent = '起身';
+      if (mActIcon) mActIcon.textContent = '🛋️';
+      if (mActLbl) mActLbl.textContent = '坐沙發';
+
       if (roleStatusText) roleStatusText.textContent = '目前身分：暖心主人（人類視角）';
       if (viewTag) viewTag.textContent = '視角：暖心主人視角 (1.6m)';
       if (headerAvatar) headerAvatar.textContent = '🧑‍🎨';
@@ -1962,6 +2080,12 @@ class GameEngine {
     if (this.keys['a'] || this.keys['arrowleft']) moveDir.x -= 1;
     if (this.keys['d'] || this.keys['arrowright']) moveDir.x += 1;
 
+    // 手機虛擬搖桿輸入整合
+    if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
+      moveDir.x += this.joystickVector.x;
+      moveDir.z += this.joystickVector.z;
+    }
+
     const isMoving = moveDir.lengthSq() > 0;
 
     if (isMoving) {
@@ -2042,8 +2166,9 @@ class GameEngine {
   }
 
   updatePlayerControlledHuman(delta, time) {
+    const hasJoy = this.joystickVector && Math.hypot(this.joystickVector.x, this.joystickVector.z) > 0.3;
     if (this.isSitting) {
-      if (this.keys['w'] || this.keys['s'] || this.keys['a'] || this.keys['d']) {
+      if (this.keys['w'] || this.keys['s'] || this.keys['a'] || this.keys['d'] || hasJoy) {
         this.toggleSitSofa();
       }
       return;
@@ -2056,6 +2181,12 @@ class GameEngine {
     if (this.keys['s'] || this.keys['arrowdown']) moveDir.z += 1;
     if (this.keys['a'] || this.keys['arrowleft']) moveDir.x -= 1;
     if (this.keys['d'] || this.keys['arrowright']) moveDir.x += 1;
+
+    // 手機虛擬搖桿輸入整合
+    if (this.joystickVector && (this.joystickVector.x !== 0 || this.joystickVector.z !== 0)) {
+      moveDir.x += this.joystickVector.x;
+      moveDir.z += this.joystickVector.z;
+    }
 
     const isMoving = moveDir.lengthSq() > 0;
 
