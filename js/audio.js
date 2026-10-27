@@ -524,8 +524,8 @@ class VoiceSystem {
       'belly': { file: 'audio/voice/belly.mp3', text: '摸摸毛茸茸的白肚子，像蓋了一條白色小被子呢！' },
       'treat_empty': { file: 'audio/voice/treat_empty.mp3', text: '點心吃光囉！快回答國語題目賺小魚乾吧～' },
       'praise': { file: 'audio/voice/praise.mp3', text: '太棒了，答對囉！小女生好崇拜你！' },
-      'family': { file: 'audio/voice/family.mp3', text: '像個可愛的小孩，陪伴我和家人說話。', optional: true },
-      'door': { file: 'audio/voice/door.mp3', text: '小女生乖～我洗完澡就馬上出來陪你！', optional: true }
+      'family': { file: 'audio/voice/family.mp3', text: '像個可愛的小孩，陪伴我和家人說話。' },
+      'door': { file: 'audio/voice/door.mp3', text: '小女生乖～我洗完澡就馬上出來陪你！' }
     };
 
     this.audioPool = {};
@@ -533,7 +533,6 @@ class VoiceSystem {
     this.lastPlayedTime = 0;
 
     Object.keys(this.clipMap).forEach(k => {
-      if (this.clipMap[k].optional) return;
       try {
         const aud = new Audio(this.clipMap[k].file);
         aud.preload = 'auto';

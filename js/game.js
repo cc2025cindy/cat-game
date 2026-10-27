@@ -2270,9 +2270,8 @@ class GameEngine {
               }
               if (window.soundSystem) window.soundSystem.playRealMeow('calling');
               if (window.voiceSystem) {
-                window.voiceSystem.speak('小女生乖～我洗完澡就馬上出來陪你！', '小主人（隔門呼應）');
+                window.voiceSystem.speak('door');
               }
-              this.showPrompt('🚪 小女生坐在門口大聲呼喚，主人在門內溫柔地給予回應！💕');
             }
           },
           {
