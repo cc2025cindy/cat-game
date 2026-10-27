@@ -3199,12 +3199,12 @@ class GameEngine {
       this.activeNearbySpot = closestSpot;
       if (dockBtn) dockBtn.classList.add('highlight-item-btn');
       if (dockIcon) dockIcon.textContent = closestSpot.icon;
-      if (dockLabel) dockLabel.textContent = `${closestSpot.name.replace(' (使用)', '')} (F)`;
+      if (dockLabel) dockLabel.textContent = closestSpot.name.replace(' (使用)', '');
     } else {
       this.activeNearbySpot = null;
       if (dockBtn) dockBtn.classList.remove('highlight-item-btn');
       if (dockIcon) dockIcon.textContent = '🛋️';
-      if (dockLabel) dockLabel.textContent = '客廳沙發 (F)';
+      if (dockLabel) dockLabel.textContent = '沙發互動';
     }
   }
 
