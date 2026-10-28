@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《小女生：膠水貓大冒險》3D 沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261027_11">
+  <link rel="stylesheet" href="css/style.css?v=20261028_2">
   <!-- Three.js 核心庫 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -38,6 +38,7 @@
       <div class="title-actions">
         <button id="tCont" class="btn-primary-glow" style="display:none;" onclick="curriculumSystem.continueGame()">▶ 繼續冒險</button>
         <button id="tStart" class="btn-primary-glow" onclick="curriculumSystem.startNewGame()">🐾 開始探索（選擇視角）</button>
+        <button id="tVocab" class="btn-secondary" style="background: #fef3c7; border-color: #f59e0b; color: #b45309;" onclick="curriculumSystem.openVocabModal('levels')">📚 本課生字・字音字形・語詞書櫃</button>
         <button id="tStages" class="btn-secondary" onclick="curriculumSystem.openStagesModal()">📖 關卡與章節一覽</button>
         <button id="tQrcode" class="btn-secondary" style="background: #eff6ff; border-color: #60a5fa; color: #1d4ed8;" onclick="openQrModal()">📱 開啟 QR Code（學生掃碼）</button>
       </div>
@@ -123,6 +124,7 @@
       <div class="controls-top">
         <button class="icon-btn" id="btn-qrcode" title="手機掃碼遊玩 (QR Code)" onclick="openQrModal()">📱</button>
         <button class="icon-btn" id="btn-toggle-view" title="切換身分 (V)">🔄</button>
+        <button class="icon-btn" id="btn-vocab-top" title="本課生字與語詞書櫃" onclick="curriculumSystem.openVocabModal('levels')">📚</button>
         <button class="icon-btn" id="btn-stages-top" title="關卡一覽 (章節)" onclick="curriculumSystem.openStagesModal()">📖</button>
         <button class="icon-btn" id="btn-bgm" title="開關音樂">🎵</button>
         <button class="icon-btn" id="btn-mute" title="開關音效">🔊</button>
@@ -206,6 +208,10 @@
           <span class="btn-icon">⬆️</span>
           <span>貓咪跳躍</span>
         </button>
+        <button class="dock-btn" id="btn-vocab-dock" style="background:#fef3c7; border: 1.5px solid #f59e0b;" onclick="curriculumSystem.openVocabModal('levels')">
+          <span class="btn-icon">📚</span>
+          <span>生字書櫃</span>
+        </button>
         <button class="dock-btn" style="background:#ffedd5; border: 1.5px solid #f97316;" onclick="curriculumSystem.openStagesModal()">
           <span class="btn-icon">📖</span>
           <span>關卡一覽</span>
@@ -255,17 +261,31 @@
     </div>
   </div>
 
-  <!-- 通關姓名輸入彈窗 -->
-  <div class="modal-overlay" id="name-input-modal">
-    <div class="modal-card" style="max-width: 440px; text-align: center;">
-      <div style="font-size: 48px; margin-bottom: 8px;">🏆🐱</div>
-      <h2 style="font-size: 22px; font-weight: 900; color: #9a3412; margin-bottom: 8px;">恭喜全課通關！</h2>
-      <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
-        你已完成全部 11 站閱讀挑戰與小女生互動，請輸入你的名字以領取結業證書：
-      </p>
-      <input id="student-name-input" type="text" placeholder="請輸入姓名（例如：王小明）" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 2px solid #fed7aa; font-size: 16px; text-align: center; margin-bottom: 16px; outline: none;" value="王小明">
-      <button class="btn-confirm" style="width: 100%;" onclick="curriculumSystem.finishAndGenerateCertificate(document.getElementById('student-name-input').value)">
-        領取結業證書 📜
+  <!-- 通關姓名輸入彈窗 (留空必填並強化視覺提醒) -->
+  <div class="modal-overlay" id="name-input-modal" style="z-index: 260;">
+    <div class="modal-card" style="max-width: 480px; text-align: center; border: 3px solid #f59e0b;">
+      <div style="font-size: 46px; margin-bottom: 4px;">🏆🐱✍️</div>
+      <h2 style="font-size: 23px; font-weight: 900; color: #9a3412; margin-bottom: 6px;">恭喜全課通關！請填寫你的姓名</h2>
+      <div style="background: #fef3c7; border: 2px dashed #d97706; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; text-align: left;">
+        <div style="font-size: 14.5px; font-weight: 900; color: #b45309; margin-bottom: 3px;">
+          ⚠️ 重要提醒：請在下方空白處輸入「你自己的姓名」！
+        </div>
+        <div style="font-size: 12.5px; color: #78350f;">
+          輸入完成後再按「領取結業證書」，你的名字就會印在專屬獎狀上喔！
+        </div>
+      </div>
+      <label for="student-name-input" style="display:block; font-size: 15px; font-weight: 900; color: #7c2d12; margin-bottom: 8px;">
+        👇 請在此點選並輸入你的姓名（必填）：
+      </label>
+      <input id="student-name-input" type="text" placeholder="請點此輸入你的姓名（不可空白）" value="" autocomplete="off"
+        oninput="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff'; const err=document.getElementById('name-input-error'); if(err) err.style.display='none';"
+        onkeydown="if(event.key==='Enter') curriculumSystem.finishAndGenerateCertificate(this.value)"
+        style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 3px solid #f59e0b; background: #fffbeb; font-size: 20px; font-weight: 900; color: #1c1917; text-align: center; margin-bottom: 10px; outline: none; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);" />
+      <div id="name-input-error" style="display:none; background:#fef2f2; border:1.5px solid #ef4444; color:#dc2626; font-size:13.5px; font-weight:800; padding:8px 12px; border-radius:10px; margin-bottom:12px;">
+        ⚠️ 請先輸入你自己的姓名，才能領取結業證書喔！
+      </div>
+      <button class="btn-confirm" style="width: 100%; font-size: 16px; padding: 12px 18px;" onclick="curriculumSystem.finishAndGenerateCertificate(document.getElementById('student-name-input').value)">
+        ✅ 我已填好姓名，領取結業證書 📜
       </button>
     </div>
   </div>
@@ -281,6 +301,7 @@
       </div>
       <div class="cert-btn-row">
         <button id="certDl" class="btn-confirm" onclick="curriculumSystem.downloadCertificate()">📥 下載證書 (PNG)</button>
+        <button id="certEditName" class="btn-secondary" style="background:#fef3c7; border-color:#f59e0b; color:#9a3412;" onclick="curriculumSystem.editCertificateName()">✏️ 重新填寫姓名</button>
         <button id="certClose" class="btn-cancel" onclick="closeCert()">關閉</button>
       </div>
     </div>
@@ -291,14 +312,32 @@
     <div class="modal-card" style="max-width: 620px;">
       <button class="modal-close" onclick="curriculumSystem.closeModal('stages-modal')">✕</button>
       <div class="modal-header">
-        <span class="modal-tag">課文章節一覽</span>
-        <h2 class="modal-title">🐾 全課 4 幕 11 個站點</h2>
+        <span class="modal-tag">課文章節與生字書櫃一覽</span>
+        <h2 class="modal-title">🐾 全課 5 幕 14 個站點（含生字語詞書櫃）</h2>
       </div>
       <div id="stages-list" style="max-height: 55vh; overflow-y: auto; margin: 12px 0;"></div>
       <div class="modal-footer" style="display:flex; gap:8px;">
         <input id="stagesTeacherPw" type="password" placeholder="請輸入教師密碼" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
         <button class="btn-confirm" onclick="curriculumSystem.unlockAllStages(document.getElementById('stagesTeacherPw').value)">密碼解鎖</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 沙發後・生字字音字形與語詞大書櫃模態視窗 (Vocab & Bookshelf Modal) -->
+  <div class="modal-overlay" id="vocab-modal" style="z-index: 220;">
+    <div class="modal-card" style="max-width: 780px; width: 95%; max-height: 88vh; display: flex; flex-direction: column; padding: 18px 20px;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('vocab-modal')">✕</button>
+      <div class="modal-header" style="margin-bottom: 8px;">
+        <span class="modal-tag" style="background:#fef3c7; color:#b45309;">沙發後方牆面・生字與語詞大書櫃</span>
+        <h2 class="modal-title" style="font-size: 20px; margin-top: 4px;">📚 第六課〈小女生〉生字・字音字形・語詞特訓館</h2>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; border-bottom: 1.5px solid #fed7aa; padding-bottom: 8px;">
+        <button id="vocab-tab-levels" class="vocab-tab-btn active" onclick="curriculumSystem.renderVocabTab('levels')">🎯 生字語詞闖關 (3關)</button>
+        <button id="vocab-tab-chars" class="vocab-tab-btn" onclick="curriculumSystem.renderVocabTab('chars')">🔤 本課 17 個生字卡</button>
+        <button id="vocab-tab-compare" class="vocab-tab-btn" onclick="curriculumSystem.renderVocabTab('compare')">🔍 字音字形易錯辨析</button>
+        <button id="vocab-tab-phrases" class="vocab-tab-btn" onclick="curriculumSystem.renderVocabTab('phrases')">💬 拆詞與七X八X語詞</button>
+      </div>
+      <div id="vocab-modal-body" style="flex: 1; overflow-y: auto; padding-right: 4px;"></div>
     </div>
   </div>
 
@@ -355,10 +394,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261028_1"></script>
-  <script src="js/audio.js?v=20261028_1"></script>
-  <script src="js/curriculum.js?v=20261028_1"></script>
-  <script src="js/game.js?v=20261028_1"></script>
+  <script src="js/stations.js?v=20261028_2"></script>
+  <script src="js/audio.js?v=20261028_2"></script>
+  <script src="js/curriculum.js?v=20261028_2"></script>
+  <script src="js/game.js?v=20261028_2"></script>
 
   <script>
     function selectRole(role) {

@@ -279,6 +279,9 @@ class GameEngine {
 
     // 12. 各式貓咪玩具 (毛線球、逗貓魚、發條老鼠、瓦楞抓盆)
     this.buildCatToys();
+
+    // 13. 沙發後方牆面與本課生字語詞大書櫃 (呼應課本 P.59 書櫃與生字字音字形語詞學習)
+    this.buildBookshelf();
   }
 
   buildWallArt() {
@@ -834,6 +837,188 @@ class GameEngine {
     toysGroup.add(bowlGroup);
 
     this.scene.add(toysGroup);
+  }
+
+  /* ==========================================================================
+     沙發後方牆面與本課生字語詞大書櫃 (呼應課本 P.59 書櫃插圖與三年級字音字形語詞學習)
+     ========================================================================== */
+  buildBookshelf() {
+    // 1. 沙發後方南側溫暖矮護牆板與踢腳線 (高 1.15m，既具空間包覆感又不阻擋高視角鏡頭)
+    const southWainscot = new THREE.Mesh(
+      new THREE.BoxGeometry(10.5, 1.15, 0.22),
+      new THREE.MeshStandardMaterial({ color: 0xf7efe4, roughness: 0.88 })
+    );
+    southWainscot.position.set(0, 0.575, 3.68);
+    southWainscot.receiveShadow = true;
+    this.scene.add(southWainscot);
+
+    const southTrim = new THREE.Mesh(
+      new THREE.BoxGeometry(10.5, 0.08, 0.26),
+      new THREE.MeshStandardMaterial({ color: 0x8a5428, roughness: 0.55 })
+    );
+    southTrim.position.set(0, 1.16, 3.68);
+    this.scene.add(southTrim);
+
+    // 2. 沙發後方大型實木生字語詞書櫃 (寬 2.7m，高 2.05m，深 0.42m，高出沙發靠背，一眼可見)
+    const shelfGroup = new THREE.Group();
+    const oakMat = new THREE.MeshStandardMaterial({ color: 0x9c6639, roughness: 0.52 });
+    const darkOakMat = new THREE.MeshStandardMaterial({ color: 0x784721, roughness: 0.55 });
+    const backBoardMat = new THREE.MeshStandardMaterial({ color: 0xebd9c5, roughness: 0.8 });
+
+    // 書櫃背板
+    const backBoard = new THREE.Mesh(new THREE.BoxGeometry(2.68, 1.98, 0.05), backBoardMat);
+    backBoard.position.set(0, 0.99, 0.19);
+    backBoard.castShadow = true;
+    backBoard.receiveShadow = true;
+    shelfGroup.add(backBoard);
+
+    // 左右側板與中間隔板
+    [-1.31, -0.44, 0.44, 1.31].forEach((x, idx) => {
+      const pillar = new THREE.Mesh(
+        new THREE.BoxGeometry(idx === 0 || idx === 3 ? 0.07 : 0.05, 1.98, 0.42),
+        oakMat
+      );
+      pillar.position.set(x, 0.99, 0);
+      pillar.castShadow = true;
+      pillar.receiveShadow = true;
+      shelfGroup.add(pillar);
+    });
+
+    // 5 層水平書架層板 (底部、第1層 0.52、第2層 1.02、第3層 1.50、頂部 1.98)
+    const shelfHeights = [0.06, 0.52, 1.02, 1.50, 1.98];
+    shelfHeights.forEach((y, i) => {
+      const board = new THREE.Mesh(
+        new THREE.BoxGeometry(2.74, i === 4 ? 0.08 : 0.05, 0.44),
+        i === 4 ? darkOakMat : oakMat
+      );
+      board.position.set(0, y, 0);
+      board.castShadow = true;
+      board.receiveShadow = true;
+      shelfGroup.add(board);
+    });
+
+    // 3. 課本 P.59 橘紅幾何編織披巾與綠意小盆栽、水杯 (重現課本第 59 頁書櫃角落插畫)
+    const throwCloth = new THREE.Mesh(
+      new THREE.BoxGeometry(0.46, 0.52, 0.45),
+      new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.85 })
+    );
+    throwCloth.position.set(-1.12, 1.77, -0.01);
+    shelfGroup.add(throwCloth);
+
+    const pot = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.08, 0.18, 14),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4 })
+    );
+    pot.position.set(-1.08, 2.11, 0);
+    shelfGroup.add(pot);
+
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.45 });
+    for (let k = 0; k < 5; k++) {
+      const ang = (k / 5) * Math.PI * 2;
+      const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 6), leafMat);
+      leaf.scale.set(0.6, 1.5, 0.3);
+      leaf.position.set(-1.08 + Math.cos(ang) * 0.06, 2.25, Math.sin(ang) * 0.06);
+      leaf.rotation.z = Math.cos(ang) * 0.35;
+      shelfGroup.add(leaf);
+    }
+
+    // 4. 書架上的繽紛繪本與立體叢書
+    const bookColors = [0xef4444, 0xf59e0b, 0x10b981, 0x3b82f6, 0x8b5cf6, 0xec4899, 0x14b8a6];
+    const compartments = [-0.88, 0, 0.88];
+    [0.55, 1.05, 1.53].forEach((baseY, rowIdx) => {
+      compartments.forEach((cx, colIdx) => {
+        for (let b = 0; b < 5; b++) {
+          const bw = 0.055;
+          const bh = 0.28 + ((b + rowIdx + colIdx) % 3) * 0.04;
+          const bd = 0.26;
+          const color = bookColors[(b + rowIdx * 2 + colIdx * 3) % bookColors.length];
+          const bookMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(bw, bh, bd),
+            new THREE.MeshStandardMaterial({ color, roughness: 0.55 })
+          );
+          bookMesh.position.set(cx - 0.26 + b * 0.068, baseY + bh / 2, -0.02);
+          bookMesh.castShadow = true;
+          shelfGroup.add(bookMesh);
+        }
+      });
+    });
+
+    // 5. 書櫃上層醒目的「6 塊本課生字字卡立牌」（正面朝向沙發與客廳 -Z）
+    const featuredChars = [
+      { ch: '柔', zy: 'ㄖㄡˊ', sub: '木部', x: -1.02, y: 1.72 },
+      { ch: '揉', zy: 'ㄖㄡˊ', sub: '手部', x: -0.62, y: 1.72 },
+      { ch: '肚', zy: 'ㄉㄨˋ', sub: '肉部', x: -0.20, y: 1.72 },
+      { ch: '膠', zy: 'ㄐㄧㄠ', sub: '肉部', x: 0.20, y: 1.72 },
+      { ch: '應', zy: 'ㄧㄥ', sub: '心部', x: 0.62, y: 1.72 },
+      { ch: '奮', zy: 'ㄈㄣˋ', sub: '大部', x: 1.02, y: 1.72 }
+    ];
+
+    featuredChars.forEach((item) => {
+      const cCanvas = document.createElement('canvas');
+      cCanvas.width = 160;
+      cCanvas.height = 180;
+      const cCtx = cCanvas.getContext('2d');
+      cCtx.fillStyle = '#fffbeb';
+      cCtx.fillRect(0, 0, 160, 180);
+      cCtx.strokeStyle = '#f59e0b';
+      cCtx.lineWidth = 8;
+      cCtx.strokeRect(4, 4, 152, 172);
+
+      cCtx.fillStyle = '#9a3412';
+      cCtx.font = '900 74px "Noto Serif TC", serif';
+      cCtx.textAlign = 'center';
+      cCtx.fillText(item.ch, 62, 102);
+
+      cCtx.fillStyle = '#d97706';
+      cCtx.font = 'bold 24px sans-serif';
+      cCtx.fillText(item.zy, 124, 78);
+
+      cCtx.fillStyle = '#047857';
+      cCtx.font = 'bold 24px sans-serif';
+      cCtx.fillText(item.sub, 80, 152);
+
+      const cardTex = new THREE.CanvasTexture(cCanvas);
+      const cardMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.32, 0.36, 0.04),
+        new THREE.MeshBasicMaterial({ map: cardTex })
+      );
+      cardMesh.position.set(item.x, item.y, -0.18);
+      shelfGroup.add(cardMesh);
+    });
+
+    // 6. 書櫃頂部大型立體招牌：「📚 本課生字・字音字形・語詞書櫃（點此闖關）」
+    const signCanvas = document.createElement('canvas');
+    signCanvas.width = 768;
+    signCanvas.height = 180;
+    const sCtx = signCanvas.getContext('2d');
+    sCtx.fillStyle = '#78350f';
+    sCtx.fillRect(0, 0, 768, 180);
+    sCtx.strokeStyle = '#fbbf24';
+    sCtx.lineWidth = 10;
+    sCtx.strokeRect(8, 8, 752, 164);
+
+    sCtx.fillStyle = '#fef3c7';
+    sCtx.font = '900 46px "Noto Sans TC", sans-serif';
+    sCtx.textAlign = 'center';
+    sCtx.fillText('📚 本課生字・字音字形・語詞書櫃', 384, 82);
+
+    sCtx.fillStyle = '#6ee7b7';
+    sCtx.font = 'bold 30px "Noto Sans TC", sans-serif';
+    sCtx.fillText('✨ 點擊書櫃或走近即可挑戰【字音・字形部首・語詞】關卡！', 384, 140);
+
+    const signTex = new THREE.CanvasTexture(signCanvas);
+    const signBoard = new THREE.Mesh(
+      new THREE.BoxGeometry(2.35, 0.52, 0.06),
+      new THREE.MeshBasicMaterial({ map: signTex })
+    );
+    signBoard.position.set(0.12, 2.30, -0.05);
+    shelfGroup.add(signBoard);
+
+    // 放置於沙發(z=1.4)正後方的牆面處 (z=3.32)，留出寬敞後走道 (z=1.95~3.05)
+    shelfGroup.position.set(0, 0, 3.32);
+    shelfGroup.userData = { id: 'bookshelf', name: '生字語詞大書櫃' };
+    this.bookshelfGroup = shelfGroup;
+    this.scene.add(shelfGroup);
   }
 
 
@@ -1499,9 +1684,12 @@ class GameEngine {
       // 6. 圓形貓抓盆碰撞 (位於 x = -2.8, z = 0.8)
       resolveCylinder(candidatePos, -2.8, 0.8, 0.36);
 
-      // 7. 客廳牆壁與邊界防護 (絕不可穿牆出室外)
+      // 7. 沙發後方生字語詞大書櫃碰撞 (位於 x = 0, z = 3.32)
+      resolveAABB(candidatePos, -1.38, 1.38, 3.08, 3.56);
+
+      // 8. 客廳牆壁與邊界防護 (絕不可穿牆出室外)
       candidatePos.x = Math.max(-4.2 + radius, Math.min(4.1 - radius, candidatePos.x));
-      candidatePos.z = Math.max(-3.72 + radius, Math.min(3.6 - radius, candidatePos.z));
+      candidatePos.z = Math.max(-3.72 + radius, Math.min(3.52 - radius, candidatePos.z));
     }
 
     return candidatePos;
@@ -2315,11 +2503,66 @@ class GameEngine {
             }
           }
         ]
+      },
+      bookshelf: {
+        icon: '📚',
+        title: '沙發後・生字語詞大書櫃',
+        tag: '課本 P.57-63・字音字形與語詞闖關',
+        desc: '擺放在沙發後方牆面的溫馨實木大書櫃，完整收錄本課 14 個習寫生字、3 個認讀字、部首筆畫、字音字形辨析（柔／揉、副／幅、肚／膠）與本課語詞闖關！',
+        actions: [
+          {
+            icon: '📖',
+            label: '開啟【生字・字音字形・語詞】學習館與闖關',
+            badge: '17 字卡＋3 關卡',
+            run: () => {
+              if (window.curriculumSystem) {
+                window.curriculumSystem.openVocabModal('levels');
+              }
+            }
+          },
+          {
+            icon: '🔊',
+            label: '直接挑戰第 11 站：〈生字書櫃：字音大挑戰〉',
+            badge: '字音辨析 3 題',
+            run: () => {
+              if (window.curriculumSystem) {
+                window.curriculumSystem.enterStation(11);
+                window.curriculumSystem.promptInteract();
+              }
+            }
+          },
+          {
+            icon: '✍️',
+            label: '直接挑戰第 12 站：〈生字書櫃：字形與部首〉',
+            badge: '部首字形 3 題',
+            run: () => {
+              if (window.curriculumSystem) {
+                window.curriculumSystem.enterStation(12);
+                window.curriculumSystem.promptInteract();
+              }
+            }
+          },
+          {
+            icon: '🌟',
+            label: '直接挑戰第 13 站：〈生字書櫃：語詞大應用〉',
+            badge: '拆詞成語 3 題',
+            run: () => {
+              if (window.curriculumSystem) {
+                window.curriculumSystem.enterStation(13);
+                window.curriculumSystem.promptInteract();
+              }
+            }
+          }
+        ]
       }
     };
   }
 
   openFurnitureModal(id) {
+    if (id === 'bookshelf' && window.curriculumSystem && typeof window.curriculumSystem.openVocabModal === 'function') {
+      window.curriculumSystem.openVocabModal('levels');
+      return;
+    }
     const data = this.FURNITURE_DATA ? this.FURNITURE_DATA[id] : null;
     if (!data) return;
 
@@ -2400,6 +2643,7 @@ class GameEngine {
 
         const clickableTargets = [
           this.sofaGroup,
+          this.bookshelfGroup,
           this.treeGroup,
           this.tvGroup,
           this.yarnBallGroup,
@@ -2490,6 +2734,15 @@ class GameEngine {
         icon: '🚪',
         pos: new THREE.Vector3(-4.4, 1.1, -2.2),
         action: () => this.openFurnitureModal('door')
+      },
+      {
+        id: 'bookshelf',
+        name: '生字語詞書櫃 (闖關)',
+        icon: '📚',
+        pos: new THREE.Vector3(0, 1.35, 2.85),
+        action: () => {
+          if (window.curriculumSystem) window.curriculumSystem.openVocabModal('levels');
+        }
       }
     ];
 
@@ -3139,6 +3392,22 @@ class GameEngine {
 
     this.camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.12);
     this.camera.lookAt(targetPos.x, targetPos.y + targetY, targetPos.z);
+
+    // 智慧鏡頭防遮擋：當鏡頭退至沙發後書櫃背側且看向北側主角時，書櫃自動柔化半透明，絕不擋住主角視線
+    if (this.bookshelfGroup) {
+      const isCamBehindShelf = (this.camera.position.z > 2.95 && targetPos.z < 2.65 && Math.abs(this.camera.position.x) < 1.85);
+      const targetOpacity = isCamBehindShelf ? 0.22 : 1.0;
+      if (this._shelfOpacity !== targetOpacity) {
+        this._shelfOpacity = targetOpacity;
+        this.bookshelfGroup.traverse((child) => {
+          if (child.isMesh && child.material) {
+            child.material.transparent = isCamBehindShelf;
+            child.material.opacity = targetOpacity;
+            child.material.needsUpdate = true;
+          }
+        });
+      }
+    }
   }
 
   updateShadows() {
@@ -3331,6 +3600,16 @@ class GameEngine {
       // 站點 7：放置於 X = 1.85, Z = 1.8。朝向 -Z 方向有長達 4 米的無障礙走道，供觸控測試量測精準類比位移
       this.catPos.set(1.85, 0, 1.8);
       this.cameraYaw = 0;
+    } else if (n >= 11 && n <= 13) {
+      // 站點 11～13（沙發後書櫃・生字與語詞關卡）：放置於沙發後方走道，鏡頭正面朝向生字語詞大書櫃
+      const offsetX = n === 11 ? -0.6 : (n === 13 ? 0.6 : 0);
+      this.catPos.set(offsetX, 0, 2.25);
+      this.playerPos.set(offsetX - 0.45, 0, 2.25);
+      if (this.player) {
+        this.player.position.copy(this.playerPos);
+        this.player.rotation.y = 0;
+      }
+      this.cameraYaw = Math.PI;
     } else if (n === 0) {
       this.catPos.set(0, 0, 0.5);
       this.cameraYaw = 0;

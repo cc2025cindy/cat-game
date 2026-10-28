@@ -119,15 +119,21 @@ class CurriculumSystem {
     this.openRoleSelectModal();
   }
 
+  getTotalQuestions() {
+    if (!this.ST || !this.ST.length) return 33;
+    return this.ST.reduce((sum, s) => sum + (s.steps ? s.steps.length : 0), 0) || 33;
+  }
+
   continueGame() {
     if (this.G.station >= this.ST.length) {
       // 已全通關：直接顯示結業證書 (滿足 cert_check.py 自動檢測)
       this.showGameUI();
+      const totalQ = this.getTotalQuestions();
       const rec = this.currentRec || {
         name: '優秀同學',
         grade: '金牌貓咪守護者',
-        got: 24,
-        max: 24,
+        got: totalQ,
+        max: totalQ,
         hp: this.G.hp,
         mistakes: this.G.totalMistakes,
         date: new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -639,16 +645,52 @@ class CurriculumSystem {
   promptCertificateName() {
     const modal = document.getElementById('name-input-modal');
     if (modal) {
+      modal.classList.remove('hide');
       modal.classList.add('active');
+      const inputEl = document.getElementById('student-name-input');
+      const errEl = document.getElementById('name-input-error');
+      if (errEl) errEl.style.display = 'none';
+      if (inputEl) {
+        inputEl.value = '';
+        inputEl.style.borderColor = '#f59e0b';
+        setTimeout(() => inputEl.focus(), 100);
+      }
     } else {
-      const name = prompt('恭喜全課通關！請輸入你的名字以領取結業證書：', '王小明');
-      this.finishAndGenerateCertificate(name || '優秀同學');
+      const name = prompt('恭喜全課通關！請輸入你自己的真實姓名以領取結業證書：', '');
+      if (name && name.trim()) {
+        this.finishAndGenerateCertificate(name.trim());
+      }
     }
   }
 
+  editCertificateName() {
+    closeCert();
+    this.promptCertificateName();
+  }
+
   finishAndGenerateCertificate(studentName) {
+    const cleanName = (studentName || '').trim();
+    const inputEl = document.getElementById('student-name-input');
+    const errEl = document.getElementById('name-input-error');
+
+    if (!cleanName) {
+      if (window.soundSystem && typeof window.soundSystem.playError === 'function') {
+        window.soundSystem.playError();
+      }
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.innerText = '⚠️ 請先在上方框框內填入你自己的「姓名」，才能印製專屬結業證書喔！';
+      }
+      if (inputEl) {
+        inputEl.style.borderColor = '#dc2626';
+        inputEl.style.backgroundColor = '#fef2f2';
+        inputEl.focus();
+      }
+      return;
+    }
+
     this.closeModal('name-input-modal');
-    const totalQ = 24;
+    const totalQ = this.getTotalQuestions();
     const got = this.G.feathers.length;
     const ratio = got / totalQ;
 
@@ -661,7 +703,7 @@ class CurriculumSystem {
     }
 
     const rec = {
-      name: studentName,
+      name: cleanName,
       grade: grade,
       got: got,
       max: totalQ,
@@ -790,9 +832,10 @@ class CurriculumSystem {
     // 8. 成果數據
     ctx.fillStyle = '#78716c';
     ctx.font = '600 20px "Noto Sans TC", sans-serif';
-    const gotText = rec.got !== undefined ? `${rec.got} / ${rec.max}` : '24 / 24';
+    const totalQ = this.getTotalQuestions();
+    const gotText = rec.got !== undefined ? `${rec.got} / ${rec.max}` : `${totalQ} / ${totalQ}`;
     const hpVal = rec.hp !== undefined ? `${rec.hp}%` : '100%';
-    ctx.fillText(`獲得點心：${gotText}　｜　健康體力：${hpVal}　｜　探索進度：4 幕 11 站全通關`, 600, 565);
+    ctx.fillText(`獲得點心：${gotText}　｜　健康體力：${hpVal}　｜　探索進度：5 幕 ${this.ST.length} 站全通關`, 600, 565);
 
     // 9. 頒證日期
     ctx.textAlign = 'left';
@@ -907,11 +950,193 @@ class CurriculumSystem {
     if (pw === '1212' || pw === 'ijun') {
       this.G.unlocked = true;
       this.saveGame();
-      alert('🔓 教師密碼正確！已成功解鎖全課 11 個站點！');
+      alert(`🔓 教師密碼正確！已成功解鎖全課 ${this.ST.length} 個站點（含生字語詞書櫃關卡）！`);
       this.openStagesModal();
     } else {
       alert('❌ 密碼錯誤，請確認教師密碼！');
     }
+  }
+
+  openVocabModal(defaultTab = 'levels') {
+    const modal = document.getElementById('vocab-modal');
+    if (!modal) return;
+    modal.classList.remove('hide');
+    modal.classList.add('active');
+    if (window.soundSystem && typeof window.soundSystem.playClick === 'function') {
+      window.soundSystem.playClick();
+    }
+    this.renderVocabTab(defaultTab);
+  }
+
+  renderVocabTab(tab) {
+    const tabs = ['levels', 'chars', 'compare', 'phrases'];
+    tabs.forEach(t => {
+      const btn = document.getElementById(`vocab-tab-${t}`);
+      if (btn) {
+        if (t === tab) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+    });
+
+    const content = document.getElementById('vocab-modal-body');
+    if (!content) return;
+    const data = window.VOCAB_DATA || { characters: [], comparisons: [], phrases: [] };
+
+    if (tab === 'levels') {
+      const vocabStations = [
+        {
+          id: 11,
+          icon: '🔊',
+          badge: '生字關卡一・字音辨析',
+          title: '第 11 站：〈生字書櫃：字音大挑戰〉',
+          desc: '挑戰本課易讀錯的生字與多音字注音：「毛茸茸（ㄖㄨㄥˊ）」、「黏人（ㄋㄧㄢˊ）」、「邊走邊回應（ㄧㄥ）」、「一唱一和（ㄏㄜˋ）」、「洗澡（ㄗㄠˇ）」、「奮力（ㄈㄣˋ）」。',
+          color: '#ea580c',
+          bg: '#fff7ed',
+          border: '#fdba74'
+        },
+        {
+          id: 12,
+          icon: '✍️',
+          badge: '生字關卡二・字形與部首',
+          title: '第 12 站：〈生字書櫃：字形與部首〉',
+          desc: '挑戰課本 P.60「我會寫字」14 個生字部首與形近字：「肚、膠（肉部）」vs 月部、「柔（木部：柔細）」vs「揉（手部：揉肚子）」、「一副樣子（刀部）」vs「一幅畫（巾部）」。',
+          color: '#0284c7',
+          bg: '#f0f9ff',
+          border: '#7dd3fc'
+        },
+        {
+          id: 13,
+          icon: '🌟',
+          badge: '生字關卡三・語詞與成語應用',
+          title: '第 13 站：〈生字書櫃：語詞大應用〉',
+          desc: '挑戰課本 P.61-63 拆詞理解法（「柔細＝柔軟細微」、「平整＝平坦整齊」）與本課重點四字語詞（「七上八下」、「七嘴八舌」、「七手八腳」、「四腳朝天」）。',
+          color: '#059669',
+          bg: '#ecfdf5',
+          border: '#6ee7b7'
+        }
+      ];
+
+      content.innerHTML = `
+        <div style="background:#fef3c7; border:1.5px solid #f59e0b; border-radius:12px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <div style="font-size:13.5px; color:#78350f; font-weight:700;">
+            📍 沙發後方的牆面已放置「生字語詞大書櫃」！你可以隨時先複習上方字卡，或直接點選下方任一關卡開始挑戰：
+          </div>
+          <button class="btn-secondary" style="padding:6px 12px; font-size:12.5px; background:#fff; border-color:#d97706; color:#9a3412;" onclick="curriculumSystem.walkToBookshelf()">
+            🐾 帶我走到沙發後書櫃前
+          </button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${vocabStations.map(vs => {
+            const cleared = this.G.cleared.has(vs.id);
+            return `
+              <div style="background:${vs.bg}; border:2px solid ${vs.border}; border-radius:14px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:220px;">
+                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <span style="font-size:20px;">${vs.icon}</span>
+                    <span style="background:#fff; color:${vs.color}; border:1px solid ${vs.border}; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:999px;">${vs.badge}</span>
+                    ${cleared ? '<span style="background:#dcfce7; color:#15803d; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:999px;">⭐ 已通關</span>' : ''}
+                  </div>
+                  <div style="font-size:15.5px; font-weight:900; color:#1c1917; margin-bottom:4px;">${vs.title}</div>
+                  <div style="font-size:12.5px; color:#44403c; line-height:1.5;">${vs.desc}</div>
+                </div>
+                <button class="btn-confirm" style="padding:10px 16px; font-size:13.5px; white-space:nowrap; background:${vs.color};" onclick="curriculumSystem.startVocabStation(${vs.id})">
+                  ${cleared ? '🔄 再次挑戰' : '🚀 立即作答'}
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else if (tab === 'chars') {
+      content.innerHTML = `
+        <div style="font-size:13px; color:#78350f; margin-bottom:10px; font-weight:700;">
+          📖 課本第 57～60 頁共 <b>14 個習寫生字</b> 與 <b>3 個認讀字</b>（含注音、部首、筆畫與字形重點）：
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(245px, 1fr)); gap:10px;">
+          ${data.characters.map(c => `
+            <div style="background:#fffdf9; border:1.5px solid ${c.type === '習寫生字' ? '#fdba74' : '#93c5fd'}; border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:5px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:52px; height:52px; border-radius:10px; background:${c.type === '習寫生字' ? '#ffedd5' : '#dbeafe'}; border:2px solid ${c.type === '習寫生字' ? '#f97316' : '#3b82f6'}; display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:900; color:#7c2d12; font-family:'Noto Serif TC', serif; flex-shrink:0;">
+                  ${c.char}
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span style="font-size:16px; font-weight:900; color:#b45309;">【${c.zhuyin}】</span>
+                    <span style="font-size:11px; font-weight:800; padding:2px 7px; border-radius:6px; background:#dcfce7; color:#166534;">${c.radical}</span>
+                    <span style="font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; background:#f1f5f9; color:#475569;">${c.strokes}</span>
+                  </div>
+                  <div style="font-size:12.5px; font-weight:800; color:#1e293b; margin-top:4px;">
+                    語詞：${c.words.join('、')}
+                  </div>
+                </div>
+              </div>
+              <div style="font-size:12px; color:#57534e; background:#fff7ed; padding:5px 8px; border-radius:8px;">
+                📝 課文：${c.sentence}
+              </div>
+              <div style="font-size:11.5px; color:#9a3412; font-weight:700; line-height:1.4;">
+                💡 ${c.tip}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else if (tab === 'compare') {
+      content.innerHTML = `
+        <div style="font-size:13px; color:#78350f; margin-bottom:10px; font-weight:700;">
+          🔍 三年級最常考的本課「字音・字形・部首」5 大易錯辨析：
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${data.comparisons.map(cmp => `
+            <div style="background:#fffdf9; border:1.5px solid #fcd34d; border-radius:12px; padding:11px 14px;">
+              <div style="font-size:14.5px; font-weight:900; color:#9a3412; margin-bottom:6px;">📌 ${cmp.title}</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div style="background:#fff7ed; border-left:4px solid #f97316; padding:8px 10px; border-radius:6px; font-size:12.5px; color:#431407; line-height:1.5;">
+                  ${cmp.left}
+                </div>
+                <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:8px 10px; border-radius:6px; font-size:12.5px; color:#1e3a8a; line-height:1.5;">
+                  ${cmp.right}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else if (tab === 'phrases') {
+      content.innerHTML = `
+        <div style="font-size:13px; color:#78350f; margin-bottom:10px; font-weight:700;">
+          💬 課本第 61～63 頁「拆詞推意法」與「我會說話」重點語詞寶典：
+        </div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          ${data.phrases.map(p => `
+            <div style="background:#fffdf9; border:1.5px solid #a7f3d0; border-radius:12px; padding:10px 14px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                <span style="font-size:17px; font-weight:900; color:#065f46;">【${p.word}】</span>
+                <span style="font-size:13px; font-weight:700; color:#047857;">（${p.zhuyin}）</span>
+                <span style="font-size:11px; font-weight:800; background:#d1fae5; color:#065f46; padding:2px 8px; border-radius:999px;">${p.category}</span>
+              </div>
+              <div style="font-size:13px; color:#1c1917; font-weight:700; margin-bottom:3px;">解釋：${p.meaning}</div>
+              <div style="font-size:12.5px; color:#57534e;">例句：${p.example}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  }
+
+  walkToBookshelf() {
+    this.closeModal('vocab-modal');
+    this.showGameUI();
+    if (window.game) {
+      window.game.placeWorld(12);
+      window.game.showPrompt('📚 已來到沙發後方的「生字語詞大書櫃」！點擊書櫃或下方作答鈕即可挑戰！');
+    }
+  }
+
+  startVocabStation(stationIdx) {
+    this.closeModal('vocab-modal');
+    this.showGameUI();
+    this.enterStation(stationIdx);
+    this.promptInteract();
   }
 
   startBellyRubInteraction() {
