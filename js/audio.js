@@ -535,7 +535,7 @@ class VoiceSystem {
 
     // 預先母帶製作之溫柔自然女聲真實音軌庫（消除機械合成音）
     this.clipMap = {
-      'call': { file: 'audio/voice/call.mp3', text: '小女生——！快過來～' },
+      'call': { file: 'audio/voice/call.mp3?v=20261028_1', text: '小女生——！快過來～' },
       'pet': { file: 'audio/voice/pet.mp3', text: '真乖～摸摸下巴，好享受呢！' },
       'feed': { file: 'audio/voice/feed.mp3', text: '來吃香噴噴的小魚乾囉！多吃一點～' },
       'wand': { file: 'audio/voice/wand.mp3', text: '看這邊！抓得到羽毛嗎？跳得真高！' },
