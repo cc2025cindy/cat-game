@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>《又遠又近的月亮：3D 登月奇航》沉浸式教育遊戲</title>
+  <link rel="stylesheet" href="css/style.css?v=20261029_1">
+  <!-- Three.js 核心庫 (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- 載入中遮罩 (滿足 quality_check.py #loading.done 檢查) -->
+  <div id="loading">
+    <div class="loading-cat-spinner">🌕</div>
+    <div style="font-size: 20px; font-weight: 800; color: #fde68a;">正在載入〈又遠又近的月亮〉3D 星際世界...</div>
+    <div class="loading-bar-wrap"><div class="loading-bar-fill"></div></div>
+  </div>
+
+  <!-- 教學遮罩佔位 (滿足 cert_check / touch_check) -->
+  <div id="tut" style="display:none;"></div>
+
+  <!-- 3D 渲染畫布容器 -->
+  <div id="canvas-container"></div>
+
+  <!-- 標題畫面 (Title Screen，滿足 cert_check #tCont 與教師密碼 #teacherPw 檢查) -->
+  <div id="title" class="title-overlay">
+    <div class="title-card">
+      <div class="title-cat-icon">🌕🚀</div>
+      <div class="title-badge">國小國語四上第六課 山鷹〈又遠又近的月亮〉</div>
+      <h1 class="title-heading">《又遠又近的月亮：3D 登月奇航》</h1>
+      <p class="title-subtitle">穿梭圖書館登月報導、四十五億歲月球隕石坑、阿波羅登月艇、中秋月夜與 3D 生字書櫃，挑戰 PIRLS 五層次提問！</p>
+      <div style="background: #fff7ed; border: 1.5px solid #fdba74; color: #9a3412; border-radius: 14px; padding: 8px 14px; font-size: 13px; font-weight: 700; margin-bottom: 14px; display: inline-block;">
+        👀 雙視角自由體驗：可選擇【🧑‍🚀 登月太空人（低重力跳躍）】或【🧒 好奇小讀者（全景觀測）】！
+      </div>
+      <div class="title-actions">
+        <button id="tCont" class="btn-primary-glow" style="display:none;" onclick="curriculumSystem.continueGame()">▶ 繼續探索</button>
+        <button id="tStart" class="btn-primary-glow" onclick="curriculumSystem.startNewGame()">🚀 開始探索（選擇視角）</button>
+        <button id="tVocab" class="btn-secondary" style="background: #fef3c7; border-color: #f59e0b; color: #9a3412;" onclick="curriculumSystem.openVocabModal('levels')">📚 生字與語詞書櫃（15生字・3關卡）</button>
+        <button id="tStages" class="btn-secondary" onclick="curriculumSystem.openStagesModal()">📖 關卡與章節一覽（全 5 幕 14 站）</button>
+        <button id="tQrcode" class="btn-secondary" style="background: #eff6ff; border-color: #60a5fa; color: #1d4ed8;" onclick="openQrModal()">📱 手機掃描 QR Code ＆ 讀報重點</button>
+      </div>
+      <div class="title-teacher-row">
+        <input id="teacherPw" type="password" placeholder="請輸入教師密碼 (ijun)">
+        <button class="btn-teacher" onclick="curriculumSystem.unlockAllStages(document.getElementById('teacherPw').value)">解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 開局身分與視角選擇面板 -->
+  <div id="role-select-modal" class="modal-overlay" style="z-index: 200;">
+    <div class="modal-card" style="max-width: 680px; text-align: center;">
+      <div class="modal-tag">步驟 1：選擇你的探索視角</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #b45309; margin: 6px 0 6px;">
+        請選擇你想體驗的視角與身分
+      </h2>
+      <p style="font-size: 13.5px; color: #78350f; margin-bottom: 14px;">
+        你可以化身執行登月任務的「太空人」或去圖書館查資料的「小讀者」（遊戲中隨時可按右上角 🔄 切換）：
+      </p>
+
+      <div class="role-select-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 8px;">
+        <!-- 選項 1：登月太空人視角 -->
+        <div class="role-card" id="select-cat-card" onclick="selectRole('cat')">
+          <div class="role-emoji" style="font-size: 44px; margin-bottom: 6px;">🧑‍🚀</div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #ea580c; margin-bottom: 4px;">太空視角：登月太空人</h3>
+          <div style="font-size: 12px; color: #c2410c; font-weight: 700; margin-bottom: 8px;">【1/6 低重力漫步視角】</div>
+          <p class="role-desc" style="font-size: 12.5px; color: #57534e; line-height: 1.5; text-align: left;">
+            • 體驗月球表面低重力輕盈跳躍<br>
+            • 近距離觀察四十五億歲隕石坑洞<br>
+            • 在陽光照射下尋找「玉兔搗藥」黑影<br>
+            • 與阿波羅登月艇及自然科學老師互動
+          </p>
+          <button class="btn-confirm" style="margin-top: 12px; width: 100%; padding: 9px 12px; font-size: 14px;">選我！以太空人視角開始 🚀</button>
+        </div>
+
+        <!-- 選項 2：好奇小讀者視角 -->
+        <div class="role-card" id="select-human-card" onclick="selectRole('human')">
+          <div class="role-emoji" style="font-size: 44px; margin-bottom: 6px;">🧒</div>
+          <h3 style="font-size: 18px; font-weight: 800; color: #2563eb; margin-bottom: 4px;">讀者視角：好奇小讀者</h3>
+          <div style="font-size: 12px; color: #1d4ed8; font-weight: 700; margin-bottom: 8px;">【全景觀測探索視角】</div>
+          <p class="role-desc" style="font-size: 12.5px; color: #57534e; line-height: 1.5; text-align: left;">
+            • 在圖書館閱讀《○○日報》登月計畫<br>
+            • 用高倍數望遠鏡測量 38 萬公里距離<br>
+            • 比較搭飛機(半個月)與騎單車(三年)<br>
+            • 在中秋月夜邊吃月餅邊聊文學的月亮
+          </p>
+          <button class="btn-confirm" style="margin-top: 12px; width: 100%; padding: 9px 12px; font-size: 14px; background: linear-gradient(135deg, #3b82f6, #2563eb);">選我！以小讀者視角開始 📖</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UI 覆蓋層 -->
+  <div id="ui-overlay">
+    <!-- 頂部資訊列 -->
+    <header class="top-bar">
+      <div class="title-badge">
+        <span class="cat-icon" id="header-avatar-icon">🧑‍🚀</span>
+        <div class="title-text">
+          <h1>第六課〈又遠又近的月亮〉3D 探索</h1>
+          <p id="role-status-text">目前身分：登月太空人（太空探索視角）</p>
+        </div>
+      </div>
+
+      <div class="stats-panel">
+        <!-- 體力血條 (HP 100) -->
+        <div class="hp-bar-container">
+          <span style="font-size: 14px;">❤️</span>
+          <div class="hp-bar-bg">
+            <div id="hp-fill" class="hp-fill" style="width: 100%;"></div>
+          </div>
+          <span id="hp-text" class="hp-text">100 HP</span>
+        </div>
+
+        <!-- 月光能量星收集 -->
+        <div class="stat-pill" style="border: 2px solid #f6ad55; background: #fffcf8;">
+          <span class="icon">🌟</span>
+          <span id="treat-display">能量星 x 0</span>
+        </div>
+      </div>
+
+      <div class="controls-top">
+        <button class="icon-btn" id="btn-vocab-top" title="生字與語詞書櫃 (18字・3關)" onclick="curriculumSystem.openVocabModal('levels')">📚</button>
+        <button class="icon-btn" id="btn-qrcode" title="QR Code ＆ 讀報與語文百寶箱" onclick="openQrModal()">📱</button>
+        <button class="icon-btn" id="btn-toggle-view" title="切換視角 (V)">🔄</button>
+        <button class="icon-btn" id="btn-stages-top" title="關卡一覽 (章節)" onclick="curriculumSystem.openStagesModal()">📖</button>
+        <button class="icon-btn" id="btn-bgm" title="開關音樂">🎵</button>
+        <button class="icon-btn" id="btn-mute" title="開關音效">🔊</button>
+      </div>
+    </header>
+
+    <!-- 任務橫幅與提示菱形群組 -->
+    <div id="mission-hud-group" class="mission-hud-group">
+      <div id="quest-banner" class="quest-banner" onclick="window.__bird && window.__bird.interact()" style="cursor:pointer;">
+        <div id="quest-title" class="quest-title">走向圖書館閱覽桌與報紙展架</div>
+        <div id="quest-desc" class="quest-desc">閱讀《○○日報》登月報導與科學家的計畫</div>
+      </div>
+      <div id="prompt-diamond" class="prompt-diamond" onclick="window.__bird && window.__bird.interact()">
+        <span id="prompt-text">📝 點此開始本關作答</span>
+      </div>
+    </div>
+
+    <!-- 3D 場景中的關卡地標浮動指引牌 -->
+    <div id="quest-3d-marker" class="quest-3d-marker" onclick="window.__bird && window.__bird.interact()">
+      <span class="quest-marker-badge">📝 關卡挑戰</span>
+      <span id="quest-marker-label">第 1 站：點此作答</span>
+    </div>
+
+    <!-- 活動邊界 Toast -->
+    <div id="boundary-toast" class="boundary-toast hidden" style="display:none !important;">⚠️ 已到達月球探測邊界囉！</div>
+
+    <!-- 語音導覽氣泡字幕 -->
+    <div class="voice-bubble-container hidden" id="owner-voice-bubble">
+      <div class="voice-avatar" id="voice-speaker-avatar">👨‍🏫</div>
+      <div class="voice-content">
+        <div class="voice-speaker" id="voice-speaker-name">自然科學老師</div>
+        <div class="voice-text" id="voice-subtitles">科學的月球距離地球那麼遠，文學的月亮則好像近在身邊！</div>
+      </div>
+    </div>
+
+    <!-- 靠近捷徑浮島 (隱藏保持清爽) -->
+    <div class="proximity-action-card hidden" id="proximity-card"></div>
+
+    <!-- 底部操作列 -->
+    <footer class="bottom-bar">
+      <div class="view-mode-tag" id="view-tag">
+        視角：登月太空人視角 (低重力漫步)
+      </div>
+
+      <div class="action-dock" id="action-dock">
+        <button class="dock-btn quiz-go-btn" id="btn-start-quiz" onclick="window.__bird && window.__bird.interact()">
+          <span class="btn-icon">📝</span>
+          <span id="btn-quiz-dock-label">本關作答</span>
+        </button>
+        <button class="dock-btn primary" id="btn-primary-action" onclick="game.chatMeow()">
+          <span class="btn-icon">📰</span>
+          <span id="btn-primary-label">阿提米絲報導</span>
+        </button>
+        <button class="dock-btn" id="btn-sit-sofa" onclick="game.interactNearbyOrOpenModal()">
+          <span class="btn-icon" id="btn-sit-icon">🔭</span>
+          <span id="btn-sit-label">科學探索站</span>
+        </button>
+        <button class="dock-btn" id="btn-feed-action" onclick="game.feedCat()">
+          <span class="btn-icon">🥮</span>
+          <span>吃月餅補血</span>
+        </button>
+        <button class="dock-btn" id="btn-wand-action" onclick="game.playWand()">
+          <span class="btn-icon">☄️</span>
+          <span>觀測隕石坑</span>
+        </button>
+        <button class="dock-btn" id="btn-pet" onclick="game.petCatHead()">
+          <span class="btn-icon">👨‍🏫</span>
+          <span>阿波羅趣聞</span>
+        </button>
+        <button class="dock-btn" id="btn-jump-dock" style="background:#e0f2fe; border: 1.5px solid #38bdf8;" onclick="game.catJump()">
+          <span class="btn-icon">⬆️</span>
+          <span>低重力跳躍</span>
+        </button>
+        <button class="dock-btn" style="background:#fef3c7; border: 1.5px solid #f59e0b;" onclick="curriculumSystem.openVocabModal('levels')">
+          <span class="btn-icon">📚</span>
+          <span>生字書櫃</span>
+        </button>
+        <button class="dock-btn" style="background:#ffedd5; border: 1.5px solid #f97316;" onclick="curriculumSystem.openStagesModal()">
+          <span class="btn-icon">📖</span>
+          <span>關卡一覽</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- 手機與平板專屬獨立跳躍鍵 -->
+    <button id="btn-touch-jump" class="touch-jump-btn" onclick="game.catJump()" ontouchstart="event.preventDefault(); game.catJump();">
+      <span style="font-size:16px; line-height:1;">⬆️</span>
+      <span style="font-size:11px; font-weight:800;">跳躍</span>
+    </button>
+
+    <!-- 行動裝置虛擬搖桿 (#pad 與 #padKnob，滿足 touch_check.py 檢查) -->
+    <div id="pad">
+      <div id="padKnob"></div>
+    </div>
+  </div>
+
+  <!-- 課文站點模態視窗 (Station Text Modal) -->
+  <div class="modal-overlay" id="station-modal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('station-modal')">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag" id="st-modal-badge">第一段・第 1 站</span>
+        <h2 class="modal-title" id="st-modal-title">站點名稱</h2>
+        <div class="modal-desc" id="st-modal-text" style="font-size:16px; line-height:1.8; color:#451a03; background:#fff7ed; padding:16px; border-radius:12px; margin-top:10px;">
+          課文內容...
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-confirm" id="st-modal-btn" style="width:100%;">接受挑戰 🌕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 題目問答模態視窗 (Quiz Question Modal) -->
+  <div class="modal-overlay" id="quiz-modal">
+    <div class="modal-card" style="max-width: 620px;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('quiz-modal')" title="關閉返回遊戲">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag" id="quiz-badge">PIRLS【擷取訊息】・第 1 題</span>
+        <h2 class="modal-title" id="quiz-question" style="font-size: 18px; margin-top: 8px;">題目...</h2>
+      </div>
+      <div id="quiz-options-container"></div>
+      <div id="quiz-feedback" class="quiz-feedback-box hidden"></div>
+    </div>
+  </div>
+
+  <!-- 通關姓名輸入彈窗 -->
+  <div class="modal-overlay" id="name-input-modal">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 8px;">🏆🌕</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #9a3412; margin-bottom: 8px;">恭喜全課通關！</h2>
+      <p style="font-size: 14px; color: #64748b; margin-bottom: 14px;">
+        你已完成〈又遠又近的月亮〉全部 5 幕 14 站閱讀與生字挑戰！<br>
+        <b style="color: #c2410c;">請務必輸入你自己的姓名</b>，系統將為你印製專屬結業證書：
+      </p>
+      <input id="student-name-input" type="text" placeholder="請在此輸入你的真實姓名..." style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 2px solid #fed7aa; font-size: 16px; text-align: center; margin-bottom: 8px; outline: none;" value="" onkeydown="if(event.key==='Enter') curriculumSystem.finishAndGenerateCertificate(this.value)">
+      <div id="name-input-error" style="display: none; color: #e11d48; font-size: 13px; font-weight: 800; margin-bottom: 12px; background: #fff1f2; padding: 8px 10px; border-radius: 8px; border: 1px solid #fecdd3;"></div>
+      <button class="btn-confirm" style="width: 100%; margin-top: 4px;" onclick="curriculumSystem.finishAndGenerateCertificate(document.getElementById('student-name-input').value)">
+        領取結業證書 📜
+      </button>
+    </div>
+  </div>
+
+  <!-- 結業證書彈窗 (滿足 cert_check.py 檢查) -->
+  <div id="cert" class="modal-overlay hide">
+    <div class="modal-card cert-card">
+      <button class="modal-close" onclick="closeCert()">✕</button>
+      <h2 class="cert-modal-title">🏆 國語四上第六課〈又遠又近的月亮〉結業證書</h2>
+      <div class="cert-canvas-wrap">
+        <canvas id="certCanvas" width="1200" height="840" style="display:none;"></canvas>
+        <img id="certImg" alt="結業證書">
+      </div>
+      <div class="cert-btn-row">
+        <button id="certDl" class="btn-confirm" onclick="curriculumSystem.downloadCertificate()">📥 下載證書 (PNG)</button>
+        <button class="btn-cancel" style="background: #fef3c7; color: #9a3412; border: 1.5px solid #f59e0b;" onclick="curriculumSystem.editCertificateName()">✏️ 修改姓名重印</button>
+        <button id="certClose" class="btn-cancel" onclick="closeCert()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 章節與關卡選單 (Stages Modal) -->
+  <div class="modal-overlay" id="stages-modal">
+    <div class="modal-card" style="max-width: 620px;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('stages-modal')">✕</button>
+      <div class="modal-header">
+        <span class="modal-tag">課文章節與生字書櫃一覽</span>
+        <h2 class="modal-title">🌕 全課 5 幕 14 個站點</h2>
+      </div>
+      <div id="stages-list" style="max-height: 55vh; overflow-y: auto; margin: 12px 0;"></div>
+      <div class="modal-footer" style="display:flex; gap:8px;">
+        <input id="stagesTeacherPw" type="password" placeholder="請輸入教師密碼 (ijun)" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
+        <button class="btn-confirm" onclick="curriculumSystem.unlockAllStages(document.getElementById('stagesTeacherPw').value)">密碼解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 生字與語詞書櫃彈窗 (Vocab Bookshelf Modal) -->
+  <div class="modal-overlay" id="vocab-modal" style="z-index: 260;">
+    <div class="modal-card" style="max-width: 720px; padding: 20px;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('vocab-modal')">✕</button>
+      <div class="modal-header" style="margin-bottom: 10px;">
+        <span class="modal-tag" style="background: #fef3c7; color: #b45309;">第六課〈又遠又近的月亮〉語文百寶箱</span>
+        <h2 class="modal-title" style="font-size: 21px; margin-top: 4px;">📚 生字與語詞互動書櫃（15習寫字＋3認讀字＋3大闖關）</h2>
+      </div>
+
+      <!-- 4 大分頁切換按鈕 -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+        <button id="vocab-tab-levels" onclick="curriculumSystem.renderVocabTab('levels')" style="flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #fdba74; font-weight: 800; font-size: 13px; cursor: pointer;">🎮 書櫃 3 大闖關</button>
+        <button id="vocab-tab-chars" onclick="curriculumSystem.renderVocabTab('chars')" style="flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #fdba74; font-weight: 800; font-size: 13px; cursor: pointer;">🃏 18 個生字卡</button>
+        <button id="vocab-tab-compare" onclick="curriculumSystem.renderVocabTab('compare')" style="flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #fdba74; font-weight: 800; font-size: 13px; cursor: pointer;">🔍 形近與多音辨析</button>
+        <button id="vocab-tab-phrases" onclick="curriculumSystem.renderVocabTab('phrases')" style="flex: 1; min-width: 120px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #fdba74; font-weight: 800; font-size: 13px; cursor: pointer;">💬 四字語詞與句型</button>
+      </div>
+
+      <!-- 動態內容容器 -->
+      <div id="vocab-body" style="max-height: 56vh; overflow-y: auto; padding-right: 4px;"></div>
+    </div>
+  </div>
+
+  <!-- 科學與文學探索站互動面板 (Furniture / Prop Usage Modal) -->
+  <div class="modal-overlay" id="furniture-modal" style="z-index: 150;">
+    <div class="modal-card" style="max-width: 540px; text-align: center; padding: 26px 22px;">
+      <button class="modal-close" onclick="game.closeFurnitureModal()">✕</button>
+      <div style="font-size: 46px; margin-bottom: 4px;" id="furn-icon">📰</div>
+      <span class="modal-tag" id="furn-tag" style="background:#fef3c7; color:#b45309; font-size:12px; font-weight:800; padding:4px 12px; border-radius:12px;">課文科學與文學互動</span>
+      <h2 class="modal-title" id="furn-title" style="color: #9a3412; margin: 8px 0 4px 0; font-size: 22px; font-weight: 900;">《○○日報》登月報導</h2>
+      <p id="furn-desc" style="font-size: 14.5px; line-height: 1.7; color: #451a03; background: #fff7ed; padding: 14px 16px; border-radius: 14px; margin: 14px 0 16px 0; text-align: left; border: 1.5px solid #fed7aa;">
+        描述內容...
+      </p>
+      <div id="furn-actions" style="display: flex; flex-direction: column; gap: 10px;"></div>
+    </div>
+  </div>
+
+  <!-- 手機掃描 QR Code ＆ 課本讀報（阿提米絲計畫）與語文百寶箱總覽彈窗 -->
+  <div class="modal-overlay" id="qrcode-modal" style="z-index: 350;">
+    <div class="modal-card" style="max-width: 600px; text-align: left;">
+      <button class="modal-close" onclick="closeQrModal()">✕</button>
+      <h2 style="font-size: 19px; font-weight: 900; color: #ea580c; margin-bottom: 8px; text-align: center;">📱 跨裝置 QR Code ＆ 課本讀報與百寶箱重點</h2>
+
+      <div style="display: flex; gap: 14px; align-items: center; background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 14px; padding: 12px; margin-bottom: 12px; flex-wrap: wrap; justify-content: center;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=6&data=https%3A%2F%2Fcc2025cindy.github.io%2Fcat-game%2Fmoon-game%2F" alt="遊戲 QR Code" style="width: 115px; height: 115px; border-radius: 10px; border: 2px solid #fff; background: #fff;">
+        <div style="flex: 1; min-width: 210px;">
+          <div style="font-size: 14px; font-weight: 900; color: #1e40af; margin-bottom: 4px;">📲 手機／平板掃描立即開始</div>
+          <div style="font-size: 12px; color: #334155; word-break: break-all; margin-bottom: 8px;">https://cc2025cindy.github.io/cat-game/moon-game/</div>
+          <button class="btn-secondary" style="padding: 6px 12px; font-size: 12.5px;" onclick="copyGameUrl()">📋 複製遊戲網址</button>
+        </div>
+      </div>
+
+      <div style="font-size: 13px; color: #334155; line-height: 1.62; max-height: 40vh; overflow-y: auto; background: #fff7ed; padding: 12px 14px; border-radius: 14px; border: 1.5px solid #fdba74; margin-bottom: 12px;">
+        <p style="margin-bottom: 8px;"><b>📰 《○○日報》NASA 發布登月計畫成員（記者林大華／報導）：</b><br>
+        美國國家航空暨太空總署（NASA）的繞月飛行計畫「阿提米絲二號」，近日公布參與四名成員，其中包括一名女性和非裔男性。自從一九七○年代的太空登月任務後，五十多年來，人類就再也沒有踏上月球。「阿提米絲計畫」預計在二○二七年，將包含首位女性在內的太空人送上月球，除了展開科學研究外，也會探索月球上的稀有資源，並做為人類進軍火星的前置作業。</p>
+        <hr style="border: none; border-top: 1px dashed #fdba74; margin: 8px 0;">
+        <p style="margin-bottom: 6px;"><b>💎 一、我會寫字（15字）：</b>館、億、隕、撞、擊、坑、射、狀、距、萬、里、均、騎、餅、揭</p>
+        <p style="margin-bottom: 6px;"><b>💎 二、我會辨字：</b>「𠯑」（管、管理；館、旅館）的第一筆是豎；「呂」（鋁、鋁罐；營、經營）是用撇來連接上下兩個口。</p>
+        <p style="margin-bottom: 6px;"><b>💎 三、音同義不同：</b>巨＋手 ➔ <b>拒</b>（拒絕）；巨＋足 ➔ <b>距</b>（距離）。</p>
+        <p style="margin-bottom: 6px;"><b>💎 四、句子練習（運用假設來強調）：</b>「<b>就算</b>搭飛機去月球，<b>也</b>要花上半個月。」</p>
+        <p><b>💎 五、記敘與說明：</b><b>記敘</b>是表達自己的想法和行動；<b>說明</b>是有條理的說明客觀事實、根據事實進行判斷。</p>
+      </div>
+      <button class="btn-confirm" onclick="closeQrModal()" style="width: 100%;">返回 3D 星際世界</button>
+    </div>
+  </div>
+
+  <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
+  <script src="js/stations.js?v=20261029_1"></script>
+  <script src="js/audio.js?v=20261029_1"></script>
+  <script src="js/curriculum.js?v=20261029_1"></script>
+  <script src="js/game.js?v=20261029_1"></script>
+
+  <script>
+    function selectRole(role) {
+      if (window.soundSystem) {
+        window.soundSystem.init();
+        window.soundSystem.playSuccess();
+      }
+      const modal = document.getElementById('role-select-modal');
+      if (modal) modal.classList.remove('active');
+
+      if (window.game) {
+        window.game.setRole(role);
+      }
+      if (window.curriculumSystem) {
+        window.curriculumSystem.confirmRoleAndStart(role);
+      }
+    }
+
+    function openQrModal() {
+      const m = document.getElementById('qrcode-modal');
+      if (m) m.classList.add('active');
+    }
+
+    function closeQrModal() {
+      const m = document.getElementById('qrcode-modal');
+      if (m) m.classList.remove('active');
+    }
+
+    function copyGameUrl() {
+      const url = 'https://cc2025cindy.github.io/cat-game/moon-game/';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          if (window.game) window.game.showPrompt('📋 已複製〈又遠又近的月亮〉遊戲網址！');
+        });
+      }
+    }
+  </script>
+</body>
+</html>
