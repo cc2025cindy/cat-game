@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>〈又遠又近的月亮〉3D GLB 模型檢視器 (model-check)</title>
+  <style>
+    body { margin: 0; background: #0f172a; color: #f8fafc; font-family: sans-serif; overflow: hidden; }
+    #info { position: absolute; top: 14px; left: 16px; background: rgba(15,23,42,0.85); padding: 12px 16px; border-radius: 12px; border: 1px solid #38bdf8; z-index: 10; font-size: 13px; line-height: 1.6; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="models/models.js"></script>
+</head>
+<body>
+  <div id="info">
+    <b>🌕 〈又遠又近的月亮〉3D GLB 模型檢視器</b>
+    <div id="stats">載入中...</div>
+  </div>
+  <script>
+    const files = ['astronaut', 'explorer', 'teacher', 'apollo', 'asteroid', 'rocket'];
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f172a);
+    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 1.8, 5.2);
+    camera.lookAt(0, 0.6, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 1.2));
+    const dir = new THREE.DirectionalLight(0xfffbeb, 1.4);
+    dir.position.set(4, 8, 5);
+    scene.add(dir);
+
+    const grid = new THREE.GridHelper(10, 20, 0x38bdf8, 0x1e293b);
+    scene.add(grid);
+
+    const loader = new THREE.GLTFLoader();
+    const draco = new THREE.DRACOLoader();
+    draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');
+    loader.setDRACOLoader(draco);
+
+    const statsEl = document.getElementById('stats');
+    const lines = [];
+    const loadedGroups = [];
+
+    files.forEach((name, idx) => {
+      const src = (window.BIRD_MODELS && window.BIRD_MODELS[name]) ? window.BIRD_MODELS[name] : `models/${name}.glb`;
+      loader.load(src, (gltf) => {
+        const obj = gltf.scene;
+        const box = new THREE.Box3().setFromObject(obj);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const scale = 1.0 / Math.max(size.y, 0.001);
+        obj.scale.multiplyScalar(scale);
+        obj.updateMatrixWorld(true);
+        const box2 = new THREE.Box3().setFromObject(obj);
+        const center2 = new THREE.Vector3();
+        box2.getCenter(center2);
+        obj.position.x = (idx - (files.length - 1) / 2) * 1.35 - center2.x;
+        obj.position.z = -center2.z;
+        obj.position.y = -box2.min.y;
+
+        let tris = 0;
+        obj.traverse(c => {
+          if (c.isMesh && c.geometry) {
+            tris += c.geometry.index ? c.geometry.index.count / 3 : c.geometry.attributes.position.count / 3;
+          }
+        });
+        lines.push(`• <b>${name}.glb</b>: ${Math.round(tris)} tris`);
+        statsEl.innerHTML = lines.join('<br>');
+        scene.add(obj);
+        loadedGroups.push(obj);
+      });
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      loadedGroups.forEach(g => { g.rotation.y += 0.008; });
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>

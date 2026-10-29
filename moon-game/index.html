@@ -6,9 +6,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《又遠又近的月亮：3D 登月奇航》沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261029_2">
-  <!-- Three.js 核心庫 (CDN) -->
+  <link rel="stylesheet" href="css/style.css?v=20261029_3">
+  <!-- Three.js 核心庫與 GLTF / Draco 3D 模型載入器 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="models/models.js?v=20261029_3"></script>
 </head>
 <body>
 
@@ -379,10 +382,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261029_2"></script>
-  <script src="js/audio.js?v=20261029_2"></script>
-  <script src="js/curriculum.js?v=20261029_2"></script>
-  <script src="js/game.js?v=20261029_2"></script>
+  <script src="js/stations.js?v=20261029_3"></script>
+  <script src="js/audio.js?v=20261029_3"></script>
+  <script src="js/curriculum.js?v=20261029_3"></script>
+  <script src="js/game.js?v=20261029_3"></script>
 
   <script>
     function selectRole(role) {

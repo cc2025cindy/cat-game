@@ -77,6 +77,7 @@ class GameEngine {
     this.createContactShadows();
     this.createAstronautAvatar();
     this.createTeacherAvatar();
+    this.loadGLBModels();
     this.setupInputs();
     this.setupOrbitCameraControls();
     this.setupMobileControls();
@@ -346,18 +347,21 @@ class GameEngine {
       }
     }
 
-    // 書架頂部的小火箭模型（課本第58頁插圖細節！）
+    // 書架頂部的小火箭模型（課本第58頁插圖細節！支援載入真實 RocketShip.glb）
+    this.libraryRocketHolder = new THREE.Group();
+    this.libraryRocketHolder.position.set(-3.8, 2.6, -3.4);
     const rocketBody = new THREE.Mesh(
       new THREE.CylinderGeometry(0.14, 0.18, 0.55, 16),
       new THREE.MeshStandardMaterial({ color: 0xf8fafc })
     );
-    rocketBody.position.set(-3.8, 2.88, -3.4);
+    rocketBody.position.set(0, 0.28, 0);
     const rocketNose = new THREE.Mesh(
       new THREE.ConeGeometry(0.15, 0.28, 16),
       new THREE.MeshStandardMaterial({ color: 0xef4444 })
     );
-    rocketNose.position.set(-3.8, 3.28, -3.4);
-    this.libraryGroup.add(rocketBody, rocketNose);
+    rocketNose.position.set(0, 0.68, 0);
+    this.libraryRocketHolder.add(rocketBody, rocketNose);
+    this.libraryGroup.add(this.libraryRocketHolder);
 
     // 圖書館閱覽桌與《○○日報：NASA發布登月計畫成員》立體報紙展板
     const desk = new THREE.Mesh(
@@ -411,13 +415,13 @@ class GameEngine {
     newsBoard.rotation.x = -0.18;
     this.libraryGroup.add(newsBoard);
 
-    // 地球儀（課本第58頁插圖細節）
-    const globe = new THREE.Mesh(
-      new THREE.SphereGeometry(0.24, 20, 20),
-      new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.4 })
+    // 地球儀（課本第58頁插圖細節，支援套用 NASA 地球衛星貼圖）
+    this.libraryGlobe = new THREE.Mesh(
+      new THREE.SphereGeometry(0.24, 32, 32),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35, metalness: 0.1 })
     );
-    globe.position.set(-1.95, 0.96, -2.25);
-    this.libraryGroup.add(globe);
+    this.libraryGlobe.position.set(-1.95, 0.96, -2.25);
+    this.libraryGroup.add(this.libraryGlobe);
 
     this.scene.add(this.libraryGroup);
   }
@@ -455,9 +459,10 @@ class GameEngine {
       this.craterGroup.add(darkPit);
     });
 
-    // 動態落下的隕石模型
-    this.fallingMeteor = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(0.22, 0),
+    // 動態落下的隕石模型（支援載入真實 NASA 1999 RQ36 asteroid.glb）
+    this.fallingMeteor = new THREE.Group();
+    const meteorCore = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.22, 1),
       new THREE.MeshStandardMaterial({
         color: 0xf97316,
         emissive: 0xdc2626,
@@ -465,54 +470,108 @@ class GameEngine {
         roughness: 0.4
       })
     );
+    this.fallingMeteor.add(meteorCore);
     this.fallingMeteor.position.set(2.8, 2.2, -2.4);
     this.craterGroup.add(this.fallingMeteor);
 
     this.scene.add(this.craterGroup);
 
-    // 「玉兔搗藥」光影觀測台 (東側 x: 3.5, z: 0.2)
+    // 「玉兔搗藥」光影觀測台 (東側 x: 3.5, z: 0.2) — 精細立體玉兔與雕花藥臼
     this.lanternGroup = new THREE.Group();
     this.lanternGroup.userData = { id: 'lantern' };
 
     const pedestal = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.65, 0.75, 0.25, 24),
-      new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 })
+      new THREE.CylinderGeometry(0.68, 0.78, 0.25, 32),
+      new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.55, metalness: 0.2 })
     );
     pedestal.position.set(3.5, 0.125, 0.2);
     this.lanternGroup.add(pedestal);
 
-    // 藥臼與搗藥杵
-    const mortar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.28, 0.2, 0.36, 20),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35 })
+    // 雙層雕花藥臼與發光仙丹、搗藥杵
+    const mortarBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.22, 0.28, 0.12, 24),
+      new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4, metalness: 0.3 })
     );
-    mortar.position.set(3.3, 0.42, 0.2);
+    mortarBase.position.set(3.26, 0.31, 0.2);
+    const mortarBowl = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.29, 0.19, 0.28, 24),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.4 })
+    );
+    mortarBowl.position.set(3.26, 0.48, 0.2);
+    const elixirGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 20, 12),
+      new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfde047, emissiveIntensity: 0.85 })
+    );
+    elixirGlow.scale.set(1, 0.35, 1);
+    elixirGlow.position.set(3.26, 0.61, 0.2);
     const pestle = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.05, 0.05, 0.45, 12),
-      new THREE.MeshStandardMaterial({ color: 0xfef08a })
+      new THREE.CylinderGeometry(0.045, 0.06, 0.52, 16),
+      new THREE.MeshStandardMaterial({ color: 0xfef08a, metalness: 0.3, roughness: 0.2 })
     );
-    pestle.position.set(3.3, 0.68, 0.2);
-    pestle.rotation.z = 0.25;
-    this.lanternGroup.add(mortar, pestle);
+    pestle.position.set(3.32, 0.75, 0.2);
+    pestle.rotation.z = -0.22;
+    this.lanternGroup.add(mortarBase, mortarBowl, elixirGlow, pestle);
 
-    // 發光白玉兔雕像
+    // 精細立體白玉兔雕像（含軀幹、後腿、雙手握杵、長耳粉紅內耳、紅寶石眼、絨毛尾）
     const rabbitMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      emissive: 0xfef08a,
-      emissiveIntensity: 0.45,
-      roughness: 0.25
+      emissive: 0xfef9c3,
+      emissiveIntensity: 0.28,
+      roughness: 0.22
     });
-    const rBody = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 20), rabbitMat);
-    rBody.scale.set(1, 1.15, 0.9);
-    rBody.position.set(3.7, 0.48, 0.2);
-    const rHead = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 20), rabbitMat);
-    rHead.position.set(3.62, 0.78, 0.2);
-    const earL = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.36, 12), rabbitMat);
-    earL.position.set(3.6, 1.05, 0.12);
-    earL.rotation.z = 0.2;
+    const pinkMat = new THREE.MeshStandardMaterial({ color: 0xfda4af, roughness: 0.35 });
+    const rubyMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, emissive: 0xbe123c, emissiveIntensity: 0.5 });
+
+    const rBody = new THREE.Mesh(new THREE.SphereGeometry(0.24, 24, 24), rabbitMat);
+    rBody.scale.set(0.95, 1.25, 0.88);
+    rBody.position.set(3.68, 0.52, 0.2);
+    rBody.rotation.z = 0.12;
+
+    const rHaunchL = new THREE.Mesh(new THREE.SphereGeometry(0.14, 18, 18), rabbitMat);
+    rHaunchL.scale.set(1.1, 0.85, 0.8);
+    rHaunchL.position.set(3.72, 0.34, 0.07);
+    const rHaunchR = rHaunchL.clone();
+    rHaunchR.position.set(3.72, 0.34, 0.33);
+
+    const rPawL = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16), rabbitMat);
+    rPawL.scale.set(1.5, 0.65, 0.75);
+    rPawL.position.set(3.46, 0.64, 0.11);
+    const rPawR = rPawL.clone();
+    rPawR.position.set(3.46, 0.64, 0.29);
+
+    const rHead = new THREE.Mesh(new THREE.SphereGeometry(0.19, 24, 24), rabbitMat);
+    rHead.scale.set(1.08, 0.96, 0.92);
+    rHead.position.set(3.61, 0.84, 0.2);
+
+    const rNose = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 12), pinkMat);
+    rNose.position.set(3.42, 0.83, 0.2);
+    const rEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.028, 12, 12), rubyMat);
+    rEyeL.position.set(3.47, 0.89, 0.11);
+    const rEyeR = rEyeL.clone();
+    rEyeR.position.set(3.47, 0.89, 0.29);
+
+    const earL = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), rabbitMat);
+    earL.scale.set(0.65, 3.2, 0.45);
+    earL.position.set(3.66, 1.12, 0.11);
+    earL.rotation.z = -0.25;
+    const earInnerL = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 12), pinkMat);
+    earInnerL.scale.set(0.55, 2.7, 0.35);
+    earInnerL.position.set(3.64, 1.11, 0.11);
+    earInnerL.rotation.z = -0.25;
+
     const earR = earL.clone();
-    earR.position.set(3.6, 1.05, 0.28);
-    this.lanternGroup.add(rBody, rHead, earL, earR);
+    earR.position.set(3.66, 1.12, 0.29);
+    const earInnerR = earInnerL.clone();
+    earInnerR.position.set(3.64, 1.11, 0.29);
+
+    const rTail = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 16), rabbitMat);
+    rTail.position.set(3.91, 0.39, 0.2);
+
+    this.lanternGroup.add(
+      rBody, rHaunchL, rHaunchR, rPawL, rPawR,
+      rHead, rNose, rEyeL, rEyeR,
+      earL, earInnerL, earR, earInnerR, rTail
+    );
 
     this.scene.add(this.lanternGroup);
   }
@@ -576,36 +635,72 @@ class GameEngine {
     stageBase.position.set(-3.1, 0.11, 0.4);
     this.transportGroup.add(stageBase);
 
-    // 1. 飛機模型（半個月）
+    // 1. 精緻民航客機模型（半個月）
     this.planeModel = new THREE.Group();
-    const fuselage = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.1, 0.1, 0.7, 16),
-      new THREE.MeshStandardMaterial({ color: 0xf8fafc })
-    );
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.2 });
+    const wingMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35, metalness: 0.2 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.1, metalness: 0.8 });
+
+    const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.085, 0.72, 24), bodyMat);
     fuselage.rotation.z = Math.PI / 2;
-    const wings = new THREE.Mesh(
-      new THREE.BoxGeometry(0.18, 0.03, 0.75),
-      new THREE.MeshStandardMaterial({ color: 0xef4444 })
-    );
-    this.planeModel.add(fuselage, wings);
+    const noseCone = new THREE.Mesh(new THREE.SphereGeometry(0.095, 20, 20), bodyMat);
+    noseCone.scale.set(1.6, 1, 1);
+    noseCone.position.set(0.36, 0, 0);
+    const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.072, 16, 16), glassMat);
+    cockpit.scale.set(1.4, 0.7, 0.85);
+    cockpit.position.set(0.34, 0.045, 0);
+    const mainWings = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.025, 0.92), wingMat);
+    mainWings.position.set(0.02, -0.01, 0);
+    const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.025), wingMat);
+    tailFin.position.set(-0.32, 0.11, 0);
+    const tailWing = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.34), wingMat);
+    tailWing.position.set(-0.32, 0.02, 0);
+    const engGeo = new THREE.CylinderGeometry(0.04, 0.035, 0.18, 16);
+    const engL = new THREE.Mesh(engGeo, bodyMat);
+    engL.rotation.z = Math.PI / 2;
+    engL.position.set(0.05, -0.055, 0.24);
+    const engR = engL.clone();
+    engR.position.set(0.05, -0.055, -0.24);
+
+    this.planeModel.add(fuselage, noseCone, cockpit, mainWings, tailFin, tailWing, engL, engR);
     this.planeModel.position.set(-3.1, 1.15, 0.1);
     this.transportGroup.add(this.planeModel);
 
-    // 2. 單車模型（三年）
+    // 2. 精緻運動單車模型（三年）
     this.bikeModel = new THREE.Group();
-    const wheelGeo = new THREE.TorusGeometry(0.16, 0.03, 12, 24);
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24 });
-    const w1 = new THREE.Mesh(wheelGeo, wheelMat);
-    w1.position.set(-0.22, 0.2, 0);
-    const w2 = new THREE.Mesh(wheelGeo, wheelMat);
-    w2.position.set(0.22, 0.2, 0);
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(0.45, 0.05, 0.05),
-      new THREE.MeshStandardMaterial({ color: 0x22c55e })
-    );
-    frame.position.set(0, 0.32, 0);
-    this.bikeModel.add(w1, w2, frame);
-    this.bikeModel.position.set(-3.1, 0.28, 0.7);
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.6, roughness: 0.25 });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.35, roughness: 0.3 });
+
+    const w1 = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.028, 16, 32), tireMat);
+    w1.position.set(-0.26, 0.2, 0);
+    const r1 = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.012, 12, 28), rimMat);
+    r1.position.set(-0.26, 0.2, 0);
+    const w2 = w1.clone();
+    w2.position.set(0.26, 0.2, 0);
+    const r2 = r1.clone();
+    r2.position.set(0.26, 0.2, 0);
+
+    const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.36, 12), frameMat);
+    topTube.rotation.z = Math.PI / 2;
+    topTube.position.set(0, 0.38, 0);
+    const downTube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.36, 12), frameMat);
+    downTube.rotation.z = 0.85;
+    downTube.position.set(0.06, 0.29, 0);
+    const seatTube = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.32, 12), frameMat);
+    seatTube.rotation.z = -0.25;
+    seatTube.position.set(-0.14, 0.31, 0);
+    const forkTube = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.34, 12), frameMat);
+    forkTube.rotation.z = 0.28;
+    forkTube.position.set(0.21, 0.32, 0);
+    const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.26, 12), tireMat);
+    handlebar.rotation.x = Math.PI / 2;
+    handlebar.position.set(0.17, 0.47, 0);
+    const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 0.07), tireMat);
+    saddle.position.set(-0.18, 0.46, 0);
+
+    this.bikeModel.add(w1, r1, w2, r2, topTube, downTube, seatTube, forkTube, handlebar, saddle);
+    this.bikeModel.position.set(-3.1, 0.24, 0.72);
     this.transportGroup.add(this.bikeModel);
 
     this.scene.add(this.transportGroup);
@@ -613,25 +708,26 @@ class GameEngine {
 
   buildApolloLanderZone() {
     // 課本第62頁：阿波羅計畫中，阿姆斯壯登月時，管制中心開玩笑找漂亮姑娘與兔子！
-    // 置於 x: 3.1, z: 2.3，確保 x = 1.85 觸控測試走廊完全暢通無阻
+    // 置於 x: 3.2, z: 2.3，支援載入 NASA 官方 Apollo Lunar Module.glb
     this.apolloGroup = new THREE.Group();
     this.apolloGroup.userData = { id: 'apollo' };
 
-    // 登月艇金色底座 (Descent Stage)
+    this.apolloLanderHolder = new THREE.Group();
+    this.apolloLanderHolder.position.set(3.2, 0, 2.3);
+
+    // 程式化備援底座與艙體（載入 apollo.glb 後將自動替換為 NASA 134 網格真實登月艇！）
     const base = new THREE.Mesh(
       new THREE.CylinderGeometry(0.65, 0.75, 0.55, 8),
       new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.45, roughness: 0.35 })
     );
-    base.position.set(3.2, 0.45, 2.3);
-    this.apolloGroup.add(base);
-
-    // 登月艇上層艙體 (Ascent Stage)
+    base.position.set(0, 0.45, 0);
     const cabin = new THREE.Mesh(
       new THREE.SphereGeometry(0.52, 16, 16),
       new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.3, roughness: 0.4 })
     );
-    cabin.position.set(3.2, 0.98, 2.3);
-    this.apolloGroup.add(cabin);
+    cabin.position.set(0, 0.98, 0);
+    this.apolloLanderHolder.add(base, cabin);
+    this.apolloGroup.add(this.apolloLanderHolder);
 
     // 登月旗幟
     const pole = new THREE.Mesh(
@@ -705,9 +801,9 @@ class GameEngine {
   }
 
   buildVocabBookshelf() {
-    // 第五幕（南側中央 x: 0, z: 3.1）：3D 生字與語詞書櫃（正面朝北 -Z，三格挑戰區）
+    // 第五幕（南側邊界 x: 0, z: 3.85）：3D 生字與語詞書櫃（正面朝北 -Z，三格挑戰區，絕不擋道）
     const group = new THREE.Group();
-    group.position.set(0, 0, 3.1);
+    group.position.set(0, 0, 3.85);
     group.rotation.y = Math.PI;
     group.userData = { id: 'bookshelf' };
 
@@ -808,12 +904,206 @@ class GameEngine {
   }
 
   /* ==========================================================================
+     3D 真實 GLB 模型與 NASA 衛星材質載入器 (方案 A：GLTFLoader + DRACOLoader)
+     ========================================================================== */
+  fitModel(obj, targetHeight, rotY = 0) {
+    const wrapper = new THREE.Group();
+    obj.rotation.y = rotY;
+    obj.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+
+    const scale = targetHeight / Math.max(size.y, 0.001);
+    obj.scale.multiplyScalar(scale);
+    obj.updateMatrixWorld(true);
+
+    const box2 = new THREE.Box3().setFromObject(obj);
+    const center2 = new THREE.Vector3();
+    box2.getCenter(center2);
+
+    obj.position.x -= center2.x;
+    obj.position.z -= center2.z;
+    obj.position.y -= box2.min.y;
+
+    obj.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.isSkinnedMesh) {
+          child.frustumCulled = false;
+        }
+      }
+    });
+
+    wrapper.add(obj);
+    return wrapper;
+  }
+
+  swapIn(group, model) {
+    if (!group || !model) return;
+    group.children.forEach((c) => {
+      c.visible = false;
+    });
+    group.add(model);
+  }
+
+  loadGLBModels() {
+    const modelsMap = window.BIRD_MODELS || {};
+    const texLoader = new THREE.TextureLoader();
+
+    // 1. 套用 NASA 真實月球與地球高解析衛星貼圖與凹凸貼圖 (Bump Map)
+    if (modelsMap.moon_tex) {
+      texLoader.load(modelsMap.moon_tex, (tex) => {
+        if (this.skyMoon && this.skyMoon.material) {
+          this.skyMoon.material.map = tex;
+          this.skyMoon.material.bumpMap = tex;
+          this.skyMoon.material.bumpScale = 0.06;
+          this.skyMoon.material.emissive = new THREE.Color(0xfef08a);
+          this.skyMoon.material.emissiveMap = tex;
+          this.skyMoon.material.emissiveIntensity = 0.42;
+          this.skyMoon.material.needsUpdate = true;
+        }
+      });
+    }
+    if (modelsMap.earth_tex && this.libraryGlobe) {
+      texLoader.load(modelsMap.earth_tex, (tex) => {
+        this.libraryGlobe.material.map = tex;
+        this.libraryGlobe.material.color.setHex(0xffffff);
+        this.libraryGlobe.material.needsUpdate = true;
+      });
+    }
+
+    if (typeof THREE.GLTFLoader !== 'function') return;
+
+    const loader = new THREE.GLTFLoader();
+    if (typeof THREE.DRACOLoader === 'function') {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');
+      loader.setDRACOLoader(dracoLoader);
+    }
+
+    const loadOne = (key, onDone) => {
+      const src = modelsMap[key] || `models/${key}.glb`;
+      loader.load(src, onDone, undefined, (err) => {
+        console.warn(`GLB fallback for ${key}:`, err);
+      });
+    };
+
+    // 2. 載入主角 1：NASA 真實 3D 登月太空人 (astronaut.glb)
+    loadOne('astronaut', (gltf) => {
+      gltf.scene.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.metalness = Math.min(c.material.metalness || 0, 0.25);
+          c.material.roughness = Math.max(c.material.roughness || 0.5, 0.45);
+          c.material.emissive = new THREE.Color(0x334155);
+          c.material.emissiveIntensity = 0.22;
+        }
+      });
+      const fitted = this.fitModel(gltf.scene, 1.26, 0);
+      this.swapIn(this.astronautVisualGroup, fitted);
+      this.astronautGLB = fitted;
+    });
+
+    // 3. 載入主角 2（小讀者／探索員視角）：帶真實走路與待機骨骼動畫的 3D 人物 (explorer.glb)
+    loadOne('explorer', (gltf) => {
+      gltf.scene.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.metalness = Math.min(c.material.metalness || 0, 0.2);
+          c.material.roughness = Math.max(c.material.roughness || 0.5, 0.5);
+        }
+      });
+      const fitted = this.fitModel(gltf.scene, 1.32, Math.PI);
+      this.swapIn(this.readerVisualGroup, fitted);
+      if (gltf.animations && gltf.animations.length > 0) {
+        this.readerMixer = new THREE.AnimationMixer(gltf.scene);
+        this.readerActions = {};
+        gltf.animations.forEach((clip) => {
+          this.readerActions[clip.name] = this.readerMixer.clipAction(clip);
+        });
+        if (this.readerActions.Idle) {
+          this.readerActions.Idle.play();
+          this.activeReaderAction = 'Idle';
+        }
+      }
+    });
+
+    // 4. 載入 NPC：自然科學老師真實 3D 人物模型 (teacher.glb)
+    loadOne('teacher', (gltf) => {
+      gltf.scene.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.metalness = Math.min(c.material.metalness || 0, 0.2);
+          c.material.roughness = Math.max(c.material.roughness || 0.5, 0.5);
+        }
+      });
+      const fitted = this.fitModel(gltf.scene, 1.52, -0.45);
+      this.swapIn(this.player, fitted);
+      this.teacherGLB = fitted;
+    });
+
+    // 5. 載入 NASA 官方阿波羅 11 號登月艇 3D 模型 (apollo.glb)
+    loadOne('apollo', (gltf) => {
+      gltf.scene.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.metalness = Math.min(c.material.metalness || 0, 0.35);
+          c.material.roughness = Math.max(c.material.roughness || 0.4, 0.38);
+        }
+      });
+      const fitted = this.fitModel(gltf.scene, 1.75, -0.5);
+      this.swapIn(this.apolloLanderHolder, fitted);
+    });
+
+    // 6. 載入 NASA 官方 1999 RQ36 隕石／小行星 3D 模型 (asteroid.glb)
+    loadOne('asteroid', (gltf) => {
+      const fitted = this.fitModel(gltf.scene, 0.46, 0);
+      fitted.traverse((c) => {
+        if (c.isMesh && c.material) {
+          c.material = c.material.clone();
+          c.material.emissive = new THREE.Color(0xea580c);
+          c.material.emissiveIntensity = 0.35;
+        }
+      });
+      this.swapIn(this.fallingMeteor, fitted);
+
+      // 在月球坑洞區周圍放置 3 顆立體隕石岩塊
+      const rockCoords = [
+        { x: 2.15, z: -2.45, h: 0.32, ry: 0.8 },
+        { x: 3.55, z: -1.95, h: 0.28, ry: 2.1 },
+        { x: 3.15, z: -3.25, h: 0.36, ry: 1.4 }
+      ];
+      rockCoords.forEach((rc) => {
+        const cloneRock = this.fitModel(gltf.scene.clone(true), rc.h, rc.ry);
+        cloneRock.position.set(rc.x, 0.02, rc.z);
+        this.craterGroup.add(cloneRock);
+      });
+    });
+
+    // 7. 載入圖書館書架頂部 3D 太空火箭模型 (rocket.glb)
+    loadOne('rocket', (gltf) => {
+      const fitted = this.fitModel(gltf.scene, 0.85, 0.4);
+      this.swapIn(this.libraryRocketHolder, fitted);
+    });
+  }
+
+  /* ==========================================================================
      角色模型：1. 登月太空人 (Astronaut) 2. 自然科學老師／小讀者 (Teacher)
      ========================================================================== */
   createAstronautAvatar() {
     const group = new THREE.Group();
+    this.astronautVisualGroup = new THREE.Group();
+    this.readerVisualGroup = new THREE.Group();
+    this.readerVisualGroup.visible = false;
+    group.add(this.astronautVisualGroup, this.readerVisualGroup);
+
     const meshGroup = new THREE.Group();
-    group.add(meshGroup);
+    this.astronautVisualGroup.add(meshGroup);
 
     const suitMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35 });
     const orangeMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.4 });
@@ -1215,6 +1505,9 @@ class GameEngine {
     const roleStatusText = document.getElementById('role-status-text');
     const viewTag = document.getElementById('view-tag');
     const headerAvatar = document.getElementById('header-avatar-icon');
+
+    if (this.astronautVisualGroup) this.astronautVisualGroup.visible = (role === 'cat');
+    if (this.readerVisualGroup) this.readerVisualGroup.visible = (role === 'human');
 
     if (role === 'cat') {
       if (roleStatusText) roleStatusText.textContent = '目前身分：登月太空人（太空探索視角）';
@@ -1678,7 +1971,7 @@ class GameEngine {
         id: 'bookshelf',
         name: '生字與語詞書櫃 (探索)',
         icon: '📚',
-        pos: new THREE.Vector3(0, 0.85, 2.85),
+        pos: new THREE.Vector3(0, 0.85, 3.45),
         action: () => {
           if (window.curriculumSystem) {
             window.curriculumSystem.openVocabModal('levels');
@@ -1872,8 +2165,35 @@ class GameEngine {
         this.catLegs[2].rotation.x = -walkCycle * 0.35;
         this.catLegs[3].rotation.x = walkCycle * 0.35;
       }
-    } else if (this.catLegs) {
-      this.catLegs.forEach(l => { l.rotation.x = 0; });
+
+      // 真實 3D 太空人模型低重力漫步彈跳與傾角動畫
+      if (this.astronautGLB) {
+        this.astronautGLB.position.y = Math.abs(Math.sin(time * 9.5)) * 0.065;
+        this.astronautGLB.rotation.z = Math.sin(time * 9.5) * 0.055;
+        this.astronautGLB.rotation.x = 0.07;
+      }
+    } else {
+      if (this.catLegs) {
+        this.catLegs.forEach(l => { l.rotation.x = 0; });
+      }
+      if (this.astronautGLB) {
+        this.astronautGLB.position.y = Math.sin(time * 2.2) * 0.015;
+        this.astronautGLB.rotation.z = 0;
+        this.astronautGLB.rotation.x = 0;
+      }
+    }
+
+    // 更新小讀者 3D 骨骼動畫 (Walk / Idle)
+    if (this.readerMixer) {
+      const targetAnim = isMoving ? 'Walk' : 'Idle';
+      if (this.activeReaderAction !== targetAnim && this.readerActions && this.readerActions[targetAnim]) {
+        const prev = this.readerActions[this.activeReaderAction];
+        const next = this.readerActions[targetAnim];
+        if (prev) prev.fadeOut(0.2);
+        next.reset().fadeIn(0.2).play();
+        this.activeReaderAction = targetAnim;
+      }
+      this.readerMixer.update(delta);
     }
 
     // 月球低重力垂直物理
@@ -1910,9 +2230,16 @@ class GameEngine {
       this.planeModel.rotation.y = Math.sin(time * 1.5) * 0.25;
     }
 
-    // 4. 自然科學老師揮手致意
+    // 4. 自然科學老師與地球儀動態效果
     if (this.playerNodes && this.playerNodes.armR) {
       this.playerNodes.armR.rotation.z = -0.35 + Math.sin(time * 3) * 0.15;
+    }
+    if (this.teacherGLB) {
+      this.teacherGLB.rotation.y = Math.sin(time * 1.4) * 0.12;
+      this.teacherGLB.position.y = Math.sin(time * 2.6) * 0.012;
+    }
+    if (this.libraryGlobe) {
+      this.libraryGlobe.rotation.y = time * 0.45;
     }
   }
 
@@ -1928,12 +2255,13 @@ class GameEngine {
     this.camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 0.15);
     this.camera.lookAt(targetPos.x, targetPos.y + targetY, targetPos.z);
 
-    // 若相機位於南側生字書櫃後方 (z > 2.85 且 x 在書櫃範圍內)，自動半透明化防遮擋視線
+    // 若相機位於南側生字書櫃後方 (z > 3.25 且 x 在書櫃範圍內)，自動透明化防遮擋視線
     if (this.bookshelfMaterials) {
-      const isBehindShelf = (this.camera.position.z > 2.85 && Math.abs(this.camera.position.x) < 2.2);
-      const targetOpacity = isBehindShelf ? 0.25 : 1.0;
+      const isBehindShelf = (this.camera.position.z > 3.25 && Math.abs(this.camera.position.x) < 2.2);
+      const targetOpacity = isBehindShelf ? 0.08 : 1.0;
       this.bookshelfMaterials.forEach(mat => {
-        mat.opacity += (targetOpacity - mat.opacity) * 0.2;
+        mat.opacity += (targetOpacity - mat.opacity) * 0.25;
+        mat.depthWrite = mat.opacity > 0.5;
       });
     }
   }
@@ -2112,7 +2440,7 @@ class GameEngine {
       this.cameraYaw = 0;
     } else if (n >= 11 && n <= 13) {
       // 第 11~13 站：生字與語詞書櫃前，將相機轉向正前方觀看書櫃 (cameraYaw = Math.PI)
-      this.catPos.set((n - 12) * 0.7, 0, 2.25);
+      this.catPos.set((n - 12) * 0.7, 0, 2.75);
       this.cameraYaw = Math.PI;
     } else {
       this.catPos.set(0, 0, 0.9);
