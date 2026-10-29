@@ -993,65 +993,107 @@ class CurriculumSystem {
     const data = window.VOCAB_DATA || { characters: [], comparisons: [], phrases: [] };
 
     if (tab === 'levels') {
-      const vocabStations = [
+      const chests = [
         {
-          id: 11,
+          id: 'chest_sound',
+          stationId: 11,
           icon: '🔊',
-          badge: '生字關卡一・字音辨析',
-          title: '第 11 站：〈生字書櫃：字音大挑戰〉',
-          desc: '挑戰本課生字與認讀字注音：「隕（ㄩㄣˇ）石」、「玉兔搗（ㄉㄠˇ）藥」、「揭（ㄐㄧㄝ）開真相」、「撞擊（ㄓㄨㄤˋ ㄐㄧˊ）」、「嫦娥（ㄔㄤˊ ㄜˊ）」、「平均（ㄐㄩㄣ）」、「騎（ㄑㄧˊ）單車」。',
+          badge: '神秘寶箱一・生字字音',
+          title: '【月球神秘寶箱：字音晶片 🎁】',
+          desc: '開出金光字音晶片！挑戰本課「隕（ㄩㄣˇ）石」、「玉兔搗（ㄉㄠˇ）藥」、「揭（ㄐㄧㄝ）開真相」、「撞擊（ㄓㄨㄤˋ ㄐㄧˊ）」、「嫦娥（ㄔㄤˊ ㄜˊ）」讀音，喚醒晶片能量！',
+          reward: '⭐ 字音徽章 + 20 HP',
           color: '#ea580c',
           bg: '#fff7ed',
           border: '#fdba74'
         },
         {
-          id: 12,
+          id: 'chest_meteor',
+          icon: '☄️',
+          badge: '神秘寶箱二・天降隕石（免答題）',
+          title: '【天降隕石神秘碎片 ☄️】',
+          desc: '<b>免答題直接獲得！</b>在月球撞擊坑底採集一顆「真實 1999 RQ36 小行星隕石玄武岩碎片」，了解月球無大氣保護的撞擊科普知識！',
+          reward: '💎 小行星隕石碎片 + 25 HP',
+          color: '#d97706',
+          bg: '#fffbeb',
+          border: '#fcd34d'
+        },
+        {
+          id: 'chest_shape',
+          stationId: 12,
           icon: '✍️',
-          badge: '生字關卡二・字形與部首',
-          title: '第 12 站：〈生字書櫃：字形與部首〉',
-          desc: '挑戰課本 P.64-65「我會寫字」15 個生字部首與辨字：「隕（阜部）」、「萬（禸部）」、「狀（犬部）」、「射（寸部）」、「里（里部 0/7畫）」、「館/管（𠯑首筆豎）」vs「鋁/營（呂用撇連）」、「距（足部）」vs「拒（手部）」。',
+          badge: '神秘寶箱三・字形與部首',
+          title: '【月球神秘寶箱：字形與部首 ✍️】',
+          desc: '開出部首放大鏡！挑戰課本 15 個生字部首與筆畫（「隕（阜部）」、「萬（禸部）」、「狀（犬部）」、「館/管」直豎 vs「鋁/營」撇連），獲得漢字解構達人徽章！',
+          reward: '⭐ 解構達人徽章 + 20 HP',
           color: '#0284c7',
           bg: '#f0f9ff',
           border: '#7dd3fc'
         },
         {
-          id: 13,
-          icon: '🌟',
-          badge: '生字關卡三・語詞與句型應用',
-          title: '第 13 站：〈生字書櫃：語詞與句型應用〉',
-          desc: '挑戰課本 P.66-67 假設強調句型「就算……也……」、「記敘 vs 說明」寫作方式，以及本課重點語詞（「特地」、「高低不平」、「玉兔搗藥」）與錯別字挑錯。',
+          id: 'chest_jump',
+          icon: '🚀',
+          badge: '神秘寶箱四・太空趣味任務',
+          title: '【阿波羅 11 號低重力跳躍任務 🚀】',
+          desc: '<b>月球低重力漫步任務！</b>月球重力只有地球的 1/6，按下【空白鍵】或【跳躍按鈕】在月球表面完成 3 次輕盈大跳躍即可完成挑戰！',
+          reward: '🏆 月面跳躍冠軍徽章 + 30 HP',
           color: '#059669',
           bg: '#ecfdf5',
           border: '#6ee7b7'
+        },
+        {
+          id: 'chest_mooncake',
+          icon: '🥮',
+          badge: '神秘寶箱五・文學能量大補給',
+          title: '【中秋文學月餅與詩詞補給 🥮】',
+          desc: '<b>開箱飄香！</b>開出金黃冰皮雙黃月餅與李白《靜夜思》星光詩籤，邊品嚐香甜月餅邊賞月，體力瞬間補滿！',
+          reward: '❤️ 體力瞬間全滿 100 HP！',
+          color: '#b45309',
+          bg: '#fef3c7',
+          border: '#f59e0b'
+        },
+        {
+          id: 'chest_phrase',
+          stationId: 13,
+          icon: '🌟',
+          badge: '神秘寶箱六・語詞與句型',
+          title: '【月球神秘寶箱：語詞與句型 🌟】',
+          desc: '開出語文百寶箱水晶！挑戰「就算……也……」假設強調句型、寫作手法與易錯字挑錯，完成全課生字語詞大滿貫！',
+          reward: '⭐ 文豪探險家徽章 + 20 HP',
+          color: '#7c3aed',
+          bg: '#faf5ff',
+          border: '#d8b4fe'
         }
       ];
 
       content.innerHTML = `
         <div style="background:#fef3c7; border:1.5px solid #f59e0b; border-radius:12px; padding:10px 14px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
           <div style="font-size:13.5px; color:#78350f; font-weight:700;">
-            📍 3D 場景南側已設置「星際生字語詞大書櫃」！你可以隨時先複習上方字卡，或直接點選下方任一關卡開始挑戰：
+            🎁 6 只神秘太空寶箱已散落在月球各地！包含生字晶片、隕石玄武岩碎片、太空跳躍小任務與文學月餅補給：
           </div>
-          <button class="btn-secondary" style="padding:6px 12px; font-size:12.5px; background:#fff; border-color:#d97706; color:#9a3412;" onclick="curriculumSystem.walkToBookshelf()">
-            🧑‍🚀 帶我走到生字書櫃前
-          </button>
         </div>
         <div style="display:flex; flex-direction:column; gap:10px;">
-          ${vocabStations.map(vs => {
-            const cleared = this.G.cleared.has(vs.id);
+          ${chests.map(ch => {
+            const cleared = ch.stationId ? this.G.cleared.has(ch.stationId) : false;
             return `
-              <div style="background:${vs.bg}; border:2px solid ${vs.border}; border-radius:14px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div style="background:${ch.bg}; border:2px solid ${ch.border}; border-radius:14px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                 <div style="flex:1; min-width:220px;">
                   <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                    <span style="font-size:20px;">${vs.icon}</span>
-                    <span style="background:#fff; color:${vs.color}; border:1px solid ${vs.border}; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:999px;">${vs.badge}</span>
-                    ${cleared ? '<span style="background:#dcfce7; color:#15803d; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:999px;">⭐ 已通關</span>' : ''}
+                    <span style="font-size:22px;">${ch.icon}</span>
+                    <span style="background:#fff; color:${ch.color}; border:1px solid ${ch.border}; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:999px;">${ch.badge}</span>
+                    <span style="font-size:11.5px; font-weight:700; color:#475569; background:#fff; padding:2px 8px; border-radius:999px; border:1px solid #e2e8f0;">${ch.reward}</span>
+                    ${cleared ? '<span style="background:#dcfce7; color:#15803d; font-size:11.5px; font-weight:800; padding:2px 8px; border-radius:999px;">⭐ 已解鎖</span>' : ''}
                   </div>
-                  <div style="font-size:15.5px; font-weight:900; color:#1c1917; margin-bottom:4px;">${vs.title}</div>
-                  <div style="font-size:12.5px; color:#44403c; line-height:1.5;">${vs.desc}</div>
+                  <div style="font-size:15.5px; font-weight:900; color:#1c1917; margin-bottom:4px;">${ch.title}</div>
+                  <div style="font-size:12.5px; color:#44403c; line-height:1.5;">${ch.desc}</div>
                 </div>
-                <button class="btn-confirm" style="padding:10px 16px; font-size:13.5px; white-space:nowrap; background:${vs.color};" onclick="curriculumSystem.startVocabStation(${vs.id})">
-                  ${cleared ? '🔄 再次挑戰' : '🚀 立即作答'}
-                </button>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="btn-secondary" style="padding:8px 12px; font-size:12.5px; white-space:nowrap; background:#fff; border-color:${ch.color}; color:${ch.color};" onclick="curriculumSystem.walkToChest('${ch.id}')">
+                    🧑‍🚀 走到寶箱前
+                  </button>
+                  <button class="btn-confirm" style="padding:8px 14px; font-size:12.5px; white-space:nowrap; background:${ch.color};" onclick="curriculumSystem.openChestDirect('${ch.id}')">
+                    🎁 開啟寶箱
+                  </button>
+                </div>
               </div>
             `;
           }).join('')}
@@ -1139,6 +1181,30 @@ class CurriculumSystem {
     if (window.game) {
       window.game.placeWorld(12);
       window.game.showPrompt('📚 已來到「星際生字語詞大書櫃」！點擊書櫃或下方作答鈕即可挑戰！');
+    }
+  }
+
+  walkToChest(chestId) {
+    this.closeModal('vocab-modal');
+    this.showGameUI();
+    if (window.game && window.game.moonChests) {
+      const chest = window.game.moonChests.find(c => c.def.id === chestId);
+      if (chest) {
+        window.game.catPos.set(chest.def.pos.x, 0, chest.def.pos.z + 1.15);
+        if (window.game.cat) {
+          window.game.cat.position.copy(window.game.catPos);
+          window.game.cat.rotation.y = Math.PI;
+        }
+        window.game.openMoonChest(chestId);
+      }
+    }
+  }
+
+  openChestDirect(chestId) {
+    this.closeModal('vocab-modal');
+    this.showGameUI();
+    if (window.game) {
+      window.game.openMoonChest(chestId);
     }
   }
 

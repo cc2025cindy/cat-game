@@ -254,6 +254,9 @@ class GameEngine {
 
     // 7. 第五幕（南側中央 z = 3.1）：3D 生字與語詞書櫃（18字生字卡＋字音／字形／語詞 3 大闖關）
     this.buildVocabBookshelf();
+
+    // 8. 散落在月球各處的 6 大 3D 神秘太空寶箱（生字、隕石、太空任務、文學月餅補給）
+    this.buildMoonChests();
   }
 
   buildSkyMoonAndStars() {
@@ -901,6 +904,228 @@ class GameEngine {
 
     this.bookshelfGroup = group;
     this.scene.add(group);
+  }
+
+  /* ==========================================================================
+     散落在月球各處的 6 大 3D 神秘太空寶箱系統（生字・隕石・任務・補給）
+     ========================================================================== */
+  createTreasureChestMesh(accentColor = 0xf59e0b) {
+    const chestGroup = new THREE.Group();
+
+    const metalMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      metalness: 0.8,
+      roughness: 0.3
+    });
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: accentColor,
+      metalness: 0.7,
+      roughness: 0.25,
+      emissive: accentColor,
+      emissiveIntensity: 0.25
+    });
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.4,
+      roughness: 0.55
+    });
+    const glowMat = new THREE.MeshStandardMaterial({
+      color: accentColor,
+      emissive: accentColor,
+      emissiveIntensity: 0.9,
+      transparent: true,
+      opacity: 0.85
+    });
+
+    // 1. 箱體 Base Box (0.46m x 0.26m x 0.34m)
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.26, 0.34), bodyMat);
+    base.position.y = 0.13;
+    base.castShadow = true;
+    chestGroup.add(base);
+
+    // 金屬加固邊框
+    const trimBottom = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.04, 0.36), goldMat);
+    trimBottom.position.y = 0.02;
+    const trimMid = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.035, 0.36), goldMat);
+    trimMid.position.y = 0.24;
+    chestGroup.add(trimBottom, trimMid);
+
+    // 2. 鉸鏈蓋 (Lid Group, pivot at back top edge y=0.26, z=-0.17)
+    const lidGroup = new THREE.Group();
+    lidGroup.position.set(0, 0.26, -0.17);
+
+    const lidMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.46, 20, 1, false, 0, Math.PI), bodyMat);
+    lidMesh.rotation.z = Math.PI * 0.5;
+    lidMesh.position.set(0, 0, 0.17);
+    lidMesh.castShadow = true;
+
+    const lidTrim = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.48, 20, 1, false, 0, Math.PI), goldMat);
+    lidTrim.rotation.z = Math.PI * 0.5;
+    lidTrim.position.set(0, 0, 0.17);
+    lidTrim.scale.set(1.02, 0.28, 1.02);
+
+    const lock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.03), goldMat);
+    lock.position.set(0, 0.01, 0.34);
+
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.04, 0), glowMat);
+    gem.position.set(0, 0.07, 0.34);
+
+    lidGroup.add(lidMesh, lidTrim, lock, gem);
+    chestGroup.add(lidGroup);
+
+    // 3. 浮動旋轉能量水晶 (浮在寶箱上方)
+    const floatGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.085, 0), glowMat);
+    floatGem.position.set(0, 0.58, 0);
+    chestGroup.add(floatGem);
+
+    // 4. 地面微光環
+    const groundRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.26, 0.42, 24),
+      new THREE.MeshBasicMaterial({ color: accentColor, side: THREE.DoubleSide, transparent: true, opacity: 0.55, depthWrite: false })
+    );
+    groundRing.rotation.x = -Math.PI * 0.5;
+    groundRing.position.y = 0.01;
+    chestGroup.add(groundRing);
+
+    return { chestGroup, lidGroup, floatGem, groundRing };
+  }
+
+  buildMoonChests() {
+    this.moonChests = [];
+    const chestDefs = [
+      {
+        id: 'chest_sound',
+        stationId: 11,
+        name: '神秘寶箱：字音晶片 🎁',
+        type: 'vocab',
+        pos: new THREE.Vector3(-1.85, 0, 2.75),
+        color: 0xf59e0b,
+        icon: '🔊',
+        title: '【月球神秘寶箱：字音晶片】',
+        tag: '生字第 11 站・字音辨析',
+        desc: '寶箱中放著「金光字音晶片」！挑戰本課「隕（ㄩㄣˇ）石」、「玉兔搗（ㄉㄠˇ）藥」、「揭（ㄐㄧㄝ）開真相」、「撞擊（ㄓㄨㄤˋ ㄐㄧˊ）」、「嫦娥（ㄔㄤˊ ㄜˊ）」讀音，喚醒晶片能量！',
+        reward: '獲得字音探險家徽章 + 20 HP！'
+      },
+      {
+        id: 'chest_meteor',
+        name: '神秘寶箱：小行星隕石碎片 ☄️',
+        type: 'meteor',
+        pos: new THREE.Vector3(2.85, 0, -2.75),
+        color: 0xea580c,
+        icon: '☄️',
+        title: '【天降隕石神秘碎片】',
+        tag: '隕石坑地質驚喜・免答題直接獲得',
+        desc: '<b>鏘！寶箱自動開啟！</b><br>你在月球隕石坑底挖掘出一顆「真實 1999 RQ36 小行星隕石玄武岩碎片」！<br><br>💡 <b>月球科學冷知識</b>：月球因為沒有水和大氣層保護，四十五億年來遭到大量流星體撞擊，形成了深淺不一的坑洞！<br><br>❤️ <b>體力大恢復</b>：成功採集隕石樣本，體力 +25 HP！',
+        reward: '採集小行星隕石碎片成功 + 25 HP！'
+      },
+      {
+        id: 'chest_shape',
+        stationId: 12,
+        name: '神秘寶箱：字形與部首 ✍️',
+        type: 'vocab',
+        pos: new THREE.Vector3(-3.25, 0, -1.2),
+        color: 0x0284c7,
+        icon: '✍️',
+        title: '【月球神秘寶箱：字形與部首】',
+        tag: '生字第 12 站・字形與部首',
+        desc: '這只天藍色寶箱裡放著「部首拆解放大鏡」！挑戰課本 15 個生字的部首與筆畫易錯點（「隕（阜部）」、「萬（禸部）」、「狀（犬部）」、「館/管」直豎 vs「鋁/營」撇連），獲得漢字解構達人徽章！',
+        reward: '獲得漢字解構達人徽章 + 20 HP！'
+      },
+      {
+        id: 'chest_jump',
+        name: '神秘寶箱：阿波羅低重力小任務 🚀',
+        type: 'jump_task',
+        pos: new THREE.Vector3(3.2, 0, 1.85),
+        color: 0x10b981,
+        icon: '🚀',
+        title: '【阿波羅 11 號太空任務寶箱】',
+        tag: '登月艇基地・月球低重力挑戰小任務',
+        desc: '<b>嗶嗶嗶！宇航通訊器響起！</b><br>阿波羅太空人向你發送「月球低重力 3 次大漫步」任務！月球重力只有地球的 1/6，請按下【跳躍按鈕】或【空白鍵】在月面上完成 3 次輕盈跳躍！',
+        reward: '完成低重力跳躍任務 + 30 HP！'
+      },
+      {
+        id: 'chest_mooncake',
+        name: '神秘寶箱：中秋月餅與詩詞補給 🥮',
+        type: 'mooncake',
+        pos: new THREE.Vector3(1.65, 0, 3.2),
+        color: 0xd97706,
+        icon: '🥮',
+        title: '【中秋文學月餅與詩詞補給箱】',
+        tag: '中秋賞月星空台・文學能量補給',
+        desc: '<b>哇！開箱飄出陣陣蓮蓉香氣！</b><br>寶箱裡放著一盤剛出爐的金黃冰皮雙黃月餅與一張李白《靜夜思》星光詩籤！<br><br>🌕 <b>詩仙李白說</b>：「床前明月光，疑是地上霜。舉頭望明月，低頭思故鄉。」文學裡的月亮撫慰了無數遊子的心！<br><br>✨ <b>能量全滿</b>：享用美味月餅，體力瞬間恢復至 100 HP！',
+        reward: '享用中秋美味月餅，體力全滿 100 HP！'
+      },
+      {
+        id: 'chest_phrase',
+        stationId: 13,
+        name: '神秘寶箱：語詞與句型 🌟',
+        type: 'vocab',
+        pos: new THREE.Vector3(-0.45, 0, -3.45),
+        color: 0x8b5cf6,
+        icon: '🌟',
+        title: '【月球神秘寶箱：語詞與句型】',
+        tag: '生字第 13 站・語詞句型應用',
+        desc: '翡翠綠色的星光寶箱裡閃耀著「語文百寶箱水晶」！挑戰「就算……也……」假設強調句型、閱讀寫作手法與易錯字挑錯，完成全課生字語詞大滿貫！',
+        reward: '獲得文豪小探險家徽章 + 20 HP！'
+      }
+    ];
+
+    this.chestDefinitions = chestDefs;
+
+    chestDefs.forEach((cdef) => {
+      const { chestGroup, lidGroup, floatGem, groundRing } = this.createTreasureChestMesh(cdef.color);
+      chestGroup.position.copy(cdef.pos);
+      chestGroup.userData = { id: cdef.id, name: cdef.name };
+      this.scene.add(chestGroup);
+
+      this.moonChests.push({
+        def: cdef,
+        group: chestGroup,
+        lid: lidGroup,
+        gem: floatGem,
+        ring: groundRing,
+        opened: false
+      });
+    });
+  }
+
+  openMoonChest(chestId) {
+    const chest = this.moonChests ? this.moonChests.find(c => c.def.id === chestId) : null;
+    if (!chest) return;
+
+    if (!chest.opened) {
+      chest.opened = true;
+      if (chest.lid) {
+        chest.lid.rotation.x = -Math.PI * 0.42;
+      }
+      if (window.soundSystem) window.soundSystem.playSuccess();
+      this.spawnHeartsNear(chest.def.pos);
+    }
+
+    if (chest.def.type === 'meteor') {
+      if (window.soundSystem) window.soundSystem.playMeteorImpact();
+      if (window.curriculumSystem) {
+        window.curriculumSystem.G.hp = Math.min(100, window.curriculumSystem.G.hp + 25);
+        window.curriculumSystem.updateHUD();
+      }
+      this.openFurnitureModal(chestId);
+      this.showPrompt('☄️ 開啟天降隕石寶箱！採集到 1999 RQ36 小行星隕石碎片，體力 +25 HP！');
+    } else if (chest.def.type === 'mooncake') {
+      if (window.soundSystem) window.soundSystem.playJadeRabbitChime();
+      if (window.curriculumSystem) {
+        window.curriculumSystem.G.hp = 100;
+        window.curriculumSystem.updateHUD();
+      }
+      this.openFurnitureModal(chestId);
+      this.showPrompt('🥮 開啟中秋文學補給箱！品嚐美味月餅，體力瞬間補滿至 100 HP！🌕✨');
+    } else if (chest.def.type === 'jump_task') {
+      this.activeChestTask = 'jump';
+      this.jumpTaskCount = 0;
+      this.openFurnitureModal(chestId);
+      this.showPrompt('🚀 阿波羅太空挑戰啟動！請在月面上連續完成 3 次低重力跳躍！');
+    } else if (chest.def.type === 'vocab') {
+      this.openFurnitureModal(chestId);
+    }
   }
 
   /* ==========================================================================
@@ -1676,6 +1901,25 @@ class GameEngine {
       this.catIsGrounded = false;
       if (window.soundSystem) window.soundSystem.playClick();
       this.showPrompt('🧑‍🚀 月球低重力跳躍！輕飄飄地飛起來囉！🌕✨');
+
+      // 檢查是否進行阿波羅太空低重力跳躍小任務
+      if (this.activeChestTask === 'jump') {
+        this.jumpTaskCount = (this.jumpTaskCount || 0) + 1;
+        this.showPrompt(`🚀 阿波羅低重力跳躍任務：第 ${this.jumpTaskCount} / 3 次！`);
+        if (this.jumpTaskCount >= 3) {
+          this.activeChestTask = null;
+          this.jumpTaskCount = 0;
+          if (window.soundSystem) window.soundSystem.playSuccess();
+          if (window.curriculumSystem) {
+            window.curriculumSystem.G.hp = Math.min(100, window.curriculumSystem.G.hp + 30);
+            window.curriculumSystem.updateHUD();
+          }
+          this.spawnHeartsNear(this.catPos);
+          setTimeout(() => {
+            alert('🎉 恭喜完成【阿波羅 11 號低重力 3 次大漫步小任務】！\n\n獲得「月面跳躍冠軍」星星徽章，體力大幅恢復 +30 HP！🌕✨');
+          }, 350);
+        }
+      }
     }
   }
 
@@ -2044,6 +2288,134 @@ class GameEngine {
             }
           }
         ]
+      },
+      chest_sound: {
+        icon: '🔊',
+        title: '【月球神秘寶箱：字音晶片】',
+        tag: '月球基地起點・生字第 11 站',
+        desc: '寶箱中放著「金光字音晶片」！挑戰本課「隕（ㄩㄣˇ）石」、「玉兔搗（ㄉㄠˇ）藥」、「揭（ㄐㄧㄝ）開真相」、「撞擊（ㄓㄨㄤˋ ㄐㄧˊ）」、「嫦娥（ㄔㄤˊ ㄜˊ）」讀音，喚醒晶片能量！',
+        actions: [
+          {
+            icon: '🚀',
+            label: '挑戰第 11 站：〈字音大挑戰〉',
+            badge: '前往作答',
+            run: () => {
+              if (window.curriculumSystem) window.curriculumSystem.startVocabStation(11);
+            }
+          },
+          {
+            icon: '🃏',
+            label: '查看 18 個生字卡片與注音',
+            badge: '生字寶典',
+            run: () => {
+              if (window.curriculumSystem) window.curriculumSystem.openVocabModal('chars');
+            }
+          }
+        ]
+      },
+      chest_meteor: {
+        icon: '☄️',
+        title: '【天降隕石神秘碎片】',
+        tag: '隕石坑地質驚喜・免答題直接獲得',
+        desc: '<b>鏘！寶箱自動開啟！</b><br>你在月球隕石坑底挖掘出一顆「真實 1999 RQ36 小行星隕石玄武岩碎片」！<br><br>💡 <b>月球科學冷知識</b>：月球因為沒有水和大氣層保護，四十五億年來遭到大量流星體撞擊，形成了深淺不一的坑洞！<br><br>❤️ <b>體力大恢復</b>：成功採集隕石樣本，體力 +25 HP！',
+        actions: [
+          {
+            icon: '✨',
+            label: '收下小行星隕石碎片（體力 +25 HP）',
+            badge: '地質採集',
+            run: () => {
+              if (window.soundSystem) window.soundSystem.playMeteorImpact();
+              this.showPrompt('☄️ 小行星玄武岩碎片已收入太空背包！');
+            }
+          }
+        ]
+      },
+      chest_shape: {
+        icon: '✍️',
+        title: '【月球神秘寶箱：字形與部首】',
+        tag: '天文望遠鏡台・生字第 12 站',
+        desc: '這只天藍色寶箱裡放著「部首拆解放大鏡」！挑戰課本 15 個生字的部首與筆畫易錯點（「隕（阜部）」、「萬（禸部）」、「狀（犬部）」、「館/管」直豎 vs「鋁/營」撇連），獲得漢字解構達人徽章！',
+        actions: [
+          {
+            icon: '🚀',
+            label: '挑戰第 12 站：〈字形與部首〉',
+            badge: '前往作答',
+            run: () => {
+              if (window.curriculumSystem) window.curriculumSystem.startVocabStation(12);
+            }
+          },
+          {
+            icon: '🔍',
+            label: '查看 4 大形近與多音字辨析',
+            badge: '易錯辨析',
+            run: () => {
+              if (window.curriculumSystem) window.curriculumSystem.openVocabModal('compare');
+            }
+          }
+        ]
+      },
+      chest_jump: {
+        icon: '🚀',
+        title: '【阿波羅 11 號太空任務寶箱】',
+        tag: '登月艇基地・月球低重力挑戰小任務',
+        desc: '<b>嗶嗶嗶！宇航通訊器響起！</b><br>阿波羅太空人向你發送「月球低重力 3 次大漫步」任務！月球重力只有地球的 1/6，請按下【跳躍按鈕】或【空白鍵】在月面上完成 3 次輕盈跳躍！',
+        actions: [
+          {
+            icon: '🦘',
+            label: '開始 3 次低重力跳躍任務！',
+            badge: '接受任務',
+            run: () => {
+              this.activeChestTask = 'jump';
+              this.jumpTaskCount = 0;
+              this.showPrompt('🚀 任務開始！請在月球表面跳躍 3 次！');
+            }
+          }
+        ]
+      },
+      chest_mooncake: {
+        icon: '🥮',
+        title: '【中秋文學月餅與詩詞補給箱】',
+        tag: '中秋賞月星空台・文學能量補給',
+        desc: '<b>哇！開箱飄出陣陣蓮蓉香氣！</b><br>寶箱裡放著一盤剛出爐的金黃冰皮雙黃月餅與一張李白《靜夜思》星光詩籤！<br><br>🌕 <b>詩仙李白說</b>：「床前明月光，疑是地上霜。舉頭望明月，低頭思故鄉。」文學裡的月亮撫慰了無數遊子的心！<br><br>✨ <b>能量全滿</b>：享用美味月餅，體力瞬間恢復至 100 HP！',
+        actions: [
+          {
+            icon: '🥮',
+            label: '享用金黃月餅（體力瞬間全滿 100 HP）',
+            badge: '能量大補給',
+            run: () => {
+              if (window.soundSystem) window.soundSystem.playJadeRabbitChime();
+              if (window.curriculumSystem) {
+                window.curriculumSystem.G.hp = 100;
+                window.curriculumSystem.updateHUD();
+              }
+              this.showPrompt('🥮 享用美味月餅，體力完全恢復！');
+            }
+          }
+        ]
+      },
+      chest_phrase: {
+        icon: '🌟',
+        title: '【月球神秘寶箱：語詞與句型】',
+        tag: '星空高台・生字第 13 站',
+        desc: '翡翠綠色的星光寶箱裡閃耀著「語文百寶箱水晶」！挑戰「就算……也……」假設強調句型、閱讀寫作手法與易錯字挑錯，完成全課生字語詞大滿貫！',
+        actions: [
+          {
+            icon: '🚀',
+            label: '挑戰第 13 站：〈語詞與句型應用〉',
+            badge: '前往作答',
+            run: () => {
+              if (window.curriculumSystem) window.curriculumSystem.startVocabStation(13);
+            }
+          },
+          {
+            icon: '💬',
+            label: '查看四字語詞與成語庫',
+            badge: '詞庫寶典',
+            run: () => {
+              if (window.curriculumSystem) window.curriculumSystem.openVocabModal('phrases');
+            }
+          }
+        ]
       }
     };
   }
@@ -2136,6 +2508,7 @@ class GameEngine {
           this.mooncakeGroup,
           this.treasureGroup,
           this.bookshelfGroup,
+          ...(this.moonChests ? this.moonChests.map(c => c.group) : []),
           ...(this.glowingAuras ? this.glowingAuras.map(a => a.group) : [])
         ].filter(Boolean);
 
@@ -2151,7 +2524,11 @@ class GameEngine {
             curr = curr.parent;
           }
           if (foundId) {
-            this.openFurnitureModal(foundId);
+            if (foundId.startsWith('chest_')) {
+              this.openMoonChest(foundId);
+            } else {
+              this.openFurnitureModal(foundId);
+            }
           }
         }
       }
@@ -2231,6 +2608,48 @@ class GameEngine {
             this.openFurnitureModal('bookshelf');
           }
         }
+      },
+      {
+        id: 'chest_sound',
+        name: '神秘寶箱：字音晶片 🎁',
+        icon: '🔊',
+        pos: new THREE.Vector3(-1.85, 0.5, 2.75),
+        action: () => this.openMoonChest('chest_sound')
+      },
+      {
+        id: 'chest_meteor',
+        name: '神秘寶箱：小行星隕石 ☄️',
+        icon: '☄️',
+        pos: new THREE.Vector3(2.85, 0.5, -2.75),
+        action: () => this.openMoonChest('chest_meteor')
+      },
+      {
+        id: 'chest_shape',
+        name: '神秘寶箱：字形與部首 ✍️',
+        icon: '✍️',
+        pos: new THREE.Vector3(-3.25, 0.5, -1.2),
+        action: () => this.openMoonChest('chest_shape')
+      },
+      {
+        id: 'chest_jump',
+        name: '神秘寶箱：低重力跳躍任務 🚀',
+        icon: '🚀',
+        pos: new THREE.Vector3(3.2, 0.5, 1.85),
+        action: () => this.openMoonChest('chest_jump')
+      },
+      {
+        id: 'chest_mooncake',
+        name: '神秘寶箱：中秋文學補給 🥮',
+        icon: '🥮',
+        pos: new THREE.Vector3(1.65, 0.5, 3.2),
+        action: () => this.openMoonChest('chest_mooncake')
+      },
+      {
+        id: 'chest_phrase',
+        name: '神秘寶箱：語詞與句型 🌟',
+        icon: '🌟',
+        pos: new THREE.Vector3(-0.45, 0.5, -3.45),
+        action: () => this.openMoonChest('chest_phrase')
       }
     ];
 
@@ -2516,6 +2935,19 @@ class GameEngine {
     }
     if (this.libraryGlobe) {
       this.libraryGlobe.rotation.y = time * 0.45;
+    }
+
+    // 5. 月球 6 大神秘寶箱頂部能量晶石旋轉與光環微動
+    if (this.moonChests) {
+      this.moonChests.forEach((mc, idx) => {
+        if (mc.gem) {
+          mc.gem.rotation.y = time * 2.2 + idx * 0.8;
+          mc.gem.position.y = 0.58 + Math.sin(time * 3.0 + idx) * 0.045;
+        }
+        if (mc.ring) {
+          mc.ring.scale.setScalar(1.0 + Math.sin(time * 2.5 + idx) * 0.06);
+        }
+      });
     }
   }
 
