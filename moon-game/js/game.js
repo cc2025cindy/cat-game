@@ -1009,28 +1009,28 @@ class GameEngine {
       this.astronautGLB = fitted;
     });
 
-    // 3. 載入主角 2（小讀者／探索員視角）：帶真實走路與待機骨骼動畫的 3D 人物 (explorer.glb)
+    // 3. 載入主角 2（好奇小讀者／小小天文探險家）：深藍色鴨舌帽、卡其探險背心與短褲、小望遠鏡與書包 3D 人物 (explorer.glb)
     loadOne('explorer', (gltf) => {
       gltf.scene.traverse((c) => {
         if (c.isMesh && c.material) {
           c.material = c.material.clone();
           c.material.metalness = Math.min(c.material.metalness || 0, 0.2);
           c.material.roughness = Math.max(c.material.roughness || 0.5, 0.5);
+          c.castShadow = true;
         }
       });
-      const fitted = this.fitModel(gltf.scene, 1.32, Math.PI);
+      const fitted = this.fitModel(gltf.scene, 1.25, 0);
       this.swapIn(this.readerVisualGroup, fitted);
-      if (gltf.animations && gltf.animations.length > 0) {
-        this.readerMixer = new THREE.AnimationMixer(gltf.scene);
-        this.readerActions = {};
-        gltf.animations.forEach((clip) => {
-          this.readerActions[clip.name] = this.readerMixer.clipAction(clip);
-        });
-        if (this.readerActions.Idle) {
-          this.readerActions.Idle.play();
-          this.activeReaderAction = 'Idle';
-        }
-      }
+      this.readerModel = fitted;
+      this.readerNodes = {
+        legL: fitted.getObjectByName('LegL'),
+        legR: fitted.getObjectByName('LegR'),
+        armL: fitted.getObjectByName('ArmL'),
+        armR: fitted.getObjectByName('ArmR'),
+        head: fitted.getObjectByName('Head'),
+        bag: fitted.getObjectByName('ExplorerBackpack'),
+        scope: fitted.getObjectByName('MiniTelescope')
+      };
     });
 
     // 4. 載入 NPC：自然科學老師真實 3D 人物模型 (teacher.glb)
@@ -1092,6 +1092,253 @@ class GameEngine {
     });
   }
 
+  buildCuteExplorerVisual() {
+    const explorerGroup = new THREE.Group();
+    explorerGroup.name = 'LittleAstronomyExplorer';
+
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdfba, roughness: 0.5 });
+    const blushMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.6 });
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2 });
+    const eyeShineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const hairMat = new THREE.MeshStandardMaterial({ color: 0x582f0e, roughness: 0.7 });
+    const capMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.5 });
+    const capBadgeMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.5 });
+    const shirtMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 });
+    const khakiMat = new THREE.MeshStandardMaterial({ color: 0xc89d66, roughness: 0.65 });
+    const pocketMat = new THREE.MeshStandardMaterial({ color: 0xb58548, roughness: 0.7 });
+    const backpackMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.6 });
+    const strapMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.6 });
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.7 });
+    const strapCordMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+    const sockMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const shoeMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.4 });
+    const soleMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.8 });
+
+    // 1. Head
+    const headGroup = new THREE.Group();
+    headGroup.name = 'Head';
+    headGroup.position.set(0, 0.88, 0);
+
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.21, 24, 20), skinMat);
+    headMesh.scale.set(1.02, 1.0, 0.98);
+    headGroup.add(headMesh);
+
+    const blushL = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), blushMat);
+    blushL.position.set(-0.11, -0.04, 0.185);
+    blushL.rotation.y = -0.3;
+    const blushR = new THREE.Mesh(new THREE.CircleGeometry(0.04, 16), blushMat);
+    blushR.position.set(0.11, -0.04, 0.185);
+    blushR.rotation.y = 0.3;
+    headGroup.add(blushL, blushR);
+
+    const eyeGeo = new THREE.SphereGeometry(0.042, 16, 16);
+    eyeGeo.scale(0.85, 1.15, 0.4);
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.075, 0.02, 0.185);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.075, 0.02, 0.185);
+
+    const shineGeo = new THREE.SphereGeometry(0.012, 10, 10);
+    const shineL = new THREE.Mesh(shineGeo, eyeShineMat);
+    shineL.position.set(-0.065, 0.035, 0.20);
+    const shineR = new THREE.Mesh(shineGeo, eyeShineMat);
+    shineR.position.set(0.085, 0.035, 0.20);
+    headGroup.add(eyeL, eyeR, shineL, shineR);
+
+    const mouthGeo = new THREE.TorusGeometry(0.03, 0.007, 8, 16, Math.PI * 0.75);
+    const mouth = new THREE.Mesh(mouthGeo, new THREE.MeshBasicMaterial({ color: 0x9f1239 }));
+    mouth.position.set(0, -0.09, 0.19);
+    mouth.rotation.x = Math.PI * 0.85;
+    mouth.rotation.z = Math.PI;
+    headGroup.add(mouth);
+
+    // Hair
+    const hairGroup = new THREE.Group();
+    const bang1 = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 8), hairMat);
+    bang1.position.set(-0.06, 0.09, 0.19);
+    bang1.rotation.set(-0.4, 0.1, -0.2);
+    const bang2 = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.14, 8), hairMat);
+    bang2.position.set(0.01, 0.10, 0.195);
+    bang2.rotation.set(-0.35, -0.1, 0.1);
+    const bang3 = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.11, 8), hairMat);
+    bang3.position.set(0.07, 0.08, 0.185);
+    bang3.rotation.set(-0.4, -0.2, 0.25);
+    const sideL = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), hairMat);
+    sideL.position.set(-0.18, 0.01, 0.02);
+    sideL.scale.set(0.6, 1.4, 1.0);
+    const sideR = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 12), hairMat);
+    sideR.position.set(0.18, 0.01, 0.02);
+    sideR.scale.set(0.6, 1.4, 1.0);
+    const backHair = new THREE.Mesh(new THREE.SphereGeometry(0.20, 16, 16), hairMat);
+    backHair.position.set(0, -0.02, -0.05);
+    hairGroup.add(bang1, bang2, bang3, sideL, sideR, backHair);
+    headGroup.add(hairGroup);
+
+    // Navy Cap
+    const capGroup = new THREE.Group();
+    const capCrown = new THREE.Mesh(new THREE.SphereGeometry(0.225, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.52), capMat);
+    capCrown.position.set(0, 0.04, -0.01);
+    capCrown.rotation.x = -0.08;
+    const brimGeo = new THREE.CylinderGeometry(0.22, 0.23, 0.025, 24, 1, false, Math.PI * 0.25, Math.PI * 0.5);
+    const capBrim = new THREE.Mesh(brimGeo, capMat);
+    capBrim.position.set(0, 0.05, 0.13);
+    capBrim.rotation.x = 0.22;
+    capBrim.scale.set(1.05, 1.0, 1.35);
+    const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.01, 16), capBadgeMat);
+    badge.position.set(0, 0.15, 0.165);
+    badge.rotation.x = 0.35;
+    capGroup.add(capCrown, capBrim, badge);
+    headGroup.add(capGroup);
+
+    explorerGroup.add(headGroup);
+
+    // 2. Torso with Khaki Vest
+    const torsoGroup = new THREE.Group();
+    torsoGroup.position.set(0, 0.56, 0);
+
+    const shirt = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.19, 0.34, 16), shirtMat);
+    torsoGroup.add(shirt);
+
+    const vestGeo = new THREE.CylinderGeometry(0.195, 0.205, 0.32, 16, 1, true, 0.35, Math.PI * 2 - 0.7);
+    const vest = new THREE.Mesh(vestGeo, khakiMat);
+    vest.position.set(0, -0.01, 0);
+    vest.rotation.y = Math.PI * 0.5 + 0.35;
+    torsoGroup.add(vest);
+
+    const lapelL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.28, 0.02), khakiMat);
+    lapelL.position.set(-0.085, 0.01, 0.185);
+    lapelL.rotation.z = -0.15;
+    const lapelR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.28, 0.02), khakiMat);
+    lapelR.position.set(0.085, 0.01, 0.185);
+    lapelR.rotation.z = 0.15;
+    torsoGroup.add(lapelL, lapelR);
+
+    const pocketGeo = new THREE.BoxGeometry(0.075, 0.085, 0.035);
+    const pocketL = new THREE.Mesh(pocketGeo, pocketMat);
+    pocketL.position.set(-0.11, -0.06, 0.17);
+    const pocketR = new THREE.Mesh(pocketGeo, pocketMat);
+    pocketR.position.set(0.11, -0.06, 0.17);
+    torsoGroup.add(pocketL, pocketR);
+
+    // Mini Telescope
+    const telescopeGroup = new THREE.Group();
+    telescopeGroup.name = 'MiniTelescope';
+    telescopeGroup.position.set(0.02, -0.02, 0.21);
+    telescopeGroup.rotation.z = 0.3;
+
+    const cord = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.007, 8, 20, Math.PI), strapCordMat);
+    cord.position.set(-0.02, 0.14, -0.05);
+    cord.rotation.x = Math.PI * 0.4;
+    torsoGroup.add(cord);
+
+    const mainBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.032, 0.15, 16), brassMat);
+    const frontLensRing = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.025, 16), brassMat);
+    frontLensRing.position.y = 0.075;
+    const lensGlass = new THREE.Mesh(new THREE.CircleGeometry(0.033, 16), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.8 }));
+    lensGlass.position.y = 0.088;
+    lensGlass.rotation.x = -Math.PI * 0.5;
+    const eyePiece = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.022, 0.04, 14), strapCordMat);
+    eyePiece.position.y = -0.08;
+    telescopeGroup.add(mainBarrel, frontLensRing, lensGlass, eyePiece);
+    torsoGroup.add(telescopeGroup);
+
+    // Explorer Backpack
+    const backpackGroup = new THREE.Group();
+    backpackGroup.name = 'ExplorerBackpack';
+    backpackGroup.position.set(0, 0.02, -0.17);
+
+    const bagBody = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.30, 0.14), backpackMat);
+    const flap = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.14, 0.15), strapMat);
+    flap.position.set(0, 0.09, 0.01);
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.02), capBadgeMat);
+    buckle.position.set(0, 0.01, -0.075);
+    const bottleHolder = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.14, 12), khakiMat);
+    bottleHolder.position.set(0.16, -0.05, 0);
+    const miniBottle = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.12, 12), new THREE.MeshStandardMaterial({ color: 0x0ea5e9 }));
+    miniBottle.position.set(0.16, -0.02, 0);
+    const strapL = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.32, 0.02), strapMat);
+    strapL.position.set(-0.11, 0.01, 0.20);
+    strapL.rotation.x = -0.1;
+    const strapR = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.32, 0.02), strapMat);
+    strapR.position.set(0.11, 0.01, 0.20);
+    strapR.rotation.x = -0.1;
+
+    backpackGroup.add(bagBody, flap, buckle, bottleHolder, miniBottle);
+    torsoGroup.add(backpackGroup, strapL, strapR);
+    explorerGroup.add(torsoGroup);
+
+    // 3. Khaki Shorts
+    const shortsGroup = new THREE.Group();
+    shortsGroup.position.set(0, 0.34, 0);
+    const waist = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.20, 0.14, 16), khakiMat);
+    const legShortL = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.10, 0.14, 14), khakiMat);
+    legShortL.position.set(-0.095, -0.08, 0);
+    const legShortR = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.10, 0.14, 14), khakiMat);
+    legShortR.position.set(0.095, -0.08, 0);
+    shortsGroup.add(waist, legShortL, legShortR);
+    explorerGroup.add(shortsGroup);
+
+    // 4. Legs
+    const createLeg = (isLeft) => {
+      const leg = new THREE.Group();
+      leg.name = isLeft ? 'LegL' : 'LegR';
+      const sign = isLeft ? -1 : 1;
+      leg.position.set(sign * 0.095, 0.24, 0);
+      const skinLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.12, 12), skinMat);
+      skinLeg.position.y = -0.02;
+      const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.07, 12), sockMat);
+      sock.position.y = -0.09;
+      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.08, 0.17), shoeMat);
+      shoe.position.set(0, -0.16, 0.03);
+      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.18), soleMat);
+      sole.position.set(0, -0.20, 0.03);
+      const toe = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), soleMat);
+      toe.position.set(0, -0.16, 0.10);
+      toe.scale.set(1.0, 0.7, 1.0);
+      leg.add(skinLeg, sock, shoe, sole, toe);
+      return leg;
+    };
+    const legL = createLeg(true);
+    const legR = createLeg(false);
+    explorerGroup.add(legL, legR);
+
+    // 5. Arms
+    const createArm = (isLeft) => {
+      const arm = new THREE.Group();
+      arm.name = isLeft ? 'ArmL' : 'ArmR';
+      const sign = isLeft ? -1 : 1;
+      arm.position.set(sign * 0.23, 0.68, 0);
+      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.10, 12), shirtMat);
+      sleeve.position.y = -0.03;
+      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.18, 12), skinMat);
+      forearm.position.y = -0.14;
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.052, 14, 14), skinMat);
+      hand.position.y = -0.25;
+      arm.add(sleeve, forearm, hand);
+      return arm;
+    };
+    const armL = createArm(true);
+    const armR = createArm(false);
+    explorerGroup.add(armL, armR);
+
+    explorerGroup.traverse((c) => {
+      if (c.isMesh) {
+        c.castShadow = true;
+        c.receiveShadow = true;
+      }
+    });
+
+    return {
+      group: explorerGroup,
+      nodes: {
+        legL, legR, armL, armR,
+        head: headGroup,
+        bag: backpackGroup,
+        scope: telescopeGroup
+      }
+    };
+  }
+
   /* ==========================================================================
      角色模型：1. 登月太空人 (Astronaut) 2. 自然科學老師／小讀者 (Teacher)
      ========================================================================== */
@@ -1101,6 +1348,11 @@ class GameEngine {
     this.readerVisualGroup = new THREE.Group();
     this.readerVisualGroup.visible = false;
     group.add(this.astronautVisualGroup, this.readerVisualGroup);
+
+    // 建立小小天文探險家可愛小學生形象（深藍色鴨舌帽、卡其探險背心與短褲、掛小望遠鏡與雙肩書包）
+    const cute = this.buildCuteExplorerVisual();
+    this.readerVisualGroup.add(cute.group);
+    this.readerNodes = cute.nodes;
 
     const meshGroup = new THREE.Group();
     this.astronautVisualGroup.add(meshGroup);
@@ -1514,9 +1766,9 @@ class GameEngine {
       if (viewTag) viewTag.textContent = '視角：登月太空人視角 (低重力漫步)';
       if (headerAvatar) headerAvatar.textContent = '🧑‍🚀';
     } else {
-      if (roleStatusText) roleStatusText.textContent = '目前身分：好奇小讀者（圖書館探索視角）';
-      if (viewTag) viewTag.textContent = '視角：好奇小讀者視角 (全景觀測)';
-      if (headerAvatar) headerAvatar.textContent = '🧒';
+      if (roleStatusText) roleStatusText.textContent = '目前身分：好奇小讀者（小小天文探險家）';
+      if (viewTag) viewTag.textContent = '視角：好奇小讀者視角 (小小天文探險家)';
+      if (headerAvatar) headerAvatar.textContent = '🧢🧒';
     }
   }
 
@@ -2183,7 +2435,31 @@ class GameEngine {
       }
     }
 
-    // 更新小讀者 3D 骨骼動畫 (Walk / Idle)
+    // 更新小小天文探險家 3D 肢體與動畫 (Walk / Idle)
+    if (this.readerNodes) {
+      if (isMoving) {
+        const walkCycle = Math.sin(time * 12);
+        if (this.readerNodes.legL) this.readerNodes.legL.rotation.x = walkCycle * 0.55;
+        if (this.readerNodes.legR) this.readerNodes.legR.rotation.x = -walkCycle * 0.55;
+        if (this.readerNodes.armL) this.readerNodes.armL.rotation.x = -walkCycle * 0.45;
+        if (this.readerNodes.armR) this.readerNodes.armR.rotation.x = walkCycle * 0.45;
+        if (this.readerNodes.head) this.readerNodes.head.rotation.y = Math.sin(time * 6) * 0.08;
+        if (this.readerNodes.bag) this.readerNodes.bag.position.y = 0.02 + Math.abs(Math.sin(time * 12)) * 0.025;
+        if (this.readerNodes.scope) this.readerNodes.scope.rotation.z = 0.3 + Math.sin(time * 12) * 0.08;
+      } else {
+        if (this.readerNodes.legL) this.readerNodes.legL.rotation.x = 0;
+        if (this.readerNodes.legR) this.readerNodes.legR.rotation.x = 0;
+        if (this.readerNodes.armL) this.readerNodes.armL.rotation.x = Math.sin(time * 2.5) * 0.05;
+        if (this.readerNodes.armR) this.readerNodes.armR.rotation.x = -Math.sin(time * 2.5) * 0.05;
+        if (this.readerNodes.head) {
+          this.readerNodes.head.rotation.y = Math.sin(time * 1.5) * 0.22; // 好奇左右張望
+          this.readerNodes.head.rotation.x = Math.sin(time * 2.0) * 0.06; // 仰望星空
+        }
+        if (this.readerNodes.bag) this.readerNodes.bag.position.y = 0.02;
+        if (this.readerNodes.scope) this.readerNodes.scope.rotation.z = 0.3;
+      }
+    }
+
     if (this.readerMixer) {
       const targetAnim = isMoving ? 'Walk' : 'Idle';
       if (this.activeReaderAction !== targetAnim && this.readerActions && this.readerActions[targetAnim]) {
