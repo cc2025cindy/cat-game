@@ -198,6 +198,30 @@ class SoundSystem {
     osc.stop(t + 0.09);
   }
 
+  playQuindarBeep(isIntro = true) {
+    this.init();
+    this.resume();
+    if (this.isMuted || !this.ctx) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+
+    // NASA Apollo Quindar Tone: Intro 2525 Hz, Outro 2475 Hz
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(isIntro ? 2525 : 2475, t);
+
+    // 短促清脆的 220ms 太空無線電發射開關音
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+    g.gain.setValueAtTime(0.2, t + 0.18);
+    g.gain.linearRampToValueAtTime(0.001, t + 0.22);
+
+    osc.connect(g);
+    g.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + 0.23);
+  }
+
   playSuccess() {
     this.init();
     this.resume();
@@ -334,100 +358,172 @@ class SoundSystem {
 
 /**
  * 課文情境語音導覽與字幕氣泡系統
+ * 支援雙重音效優化：
+ * 1. NASA Apollo Quindar Beeps 太空無線電發射開關提示音 (2525Hz / 2475Hz)
+ * 2. 14 站站點課文導讀與情境對話 AI 神經網路臺灣親切語音 (高音質立體聲 MP3，並保留 TTS 備援)
  */
 class VoiceSystem {
   constructor() {
     this.isMuted = false;
     this.lockUntil = 0;
+    this.activeAudio = null;
+    this._hideTimer = null;
     this.lines = {
       newspaper: {
-        speaker: '📰 圖書館小讀者',
-        avatar: '🧒',
+        speaker: '📰 小小天文探險家',
+        avatar: '🧢🧒',
+        file: 'audio/voice/voice_newspaper.mp3',
         text: '哇！《○○日報》寫著：NASA「阿提米絲計畫」預計將首位女性太空人送上月球，還要探索稀有資源呢！'
       },
       crater: {
         speaker: '🧑‍🚀 登月探測員',
         avatar: '🧑‍🚀',
+        file: 'audio/voice/voice_crater.mp3',
         text: '月球已經四十五億歲了！因為沒有水和大氣保護，每天受到無數隕石撞擊，到處都是高低不平的坑洞！'
       },
       rabbit: {
         speaker: '🐇 月亮神話導覽',
         avatar: '🐇',
+        file: 'audio/voice/voice_rabbit.mp3',
         text: '高低不平的坑洞在陽光照射下產生各種形狀的黑影，古人看著黑影，就想像出可愛的「玉兔搗藥」囉！'
       },
       distance: {
         speaker: '🔭 天文觀測站',
         avatar: '🔭',
+        file: 'audio/voice/voice_distance.mp3',
         text: '月球距離地球最近三十六萬公里、最遠四十萬公里！平均三十八萬公里，就算搭飛機去也要花上半個月，騎單車更要騎三年呢！'
       },
       apollo: {
         speaker: '👨‍🏫 自然科學老師',
         avatar: '👨‍🏫',
+        file: 'audio/voice/voice_apollo.mp3',
         text: '當年阿姆斯壯登月時，管制中心還開玩笑要他找找看，有沒有一位漂亮的姑娘帶著一隻兔子呢！'
       },
       midautumn: {
         speaker: '🥮 中秋賞月家人',
         avatar: '🥮',
+        file: 'audio/voice/voice_midautumn.mp3',
         text: '來吃塊香甜的中秋月餅吧！科學的月球距離地球那麼遠，文學的月亮卻好像近在身邊，真是奇妙哇！'
       },
       praise: {
         speaker: '👨‍🏫 自然科學老師',
         avatar: '👨‍🏫',
+        file: 'audio/voice/voice_praise.mp3',
         text: '太棒了，完全答對囉！你對科學的月球和文學的月亮都有深入的了解！'
       }
     };
   }
 
+  speakStation(stationIdx) {
+    if (stationIdx < 0 || stationIdx > 13) return;
+    const st = (window.ST && window.ST[stationIdx]) ? window.ST[stationIdx] : null;
+    if (!st) return;
+
+    const file = `audio/voice/station_${stationIdx}.mp3`;
+    const speaker = st.kind === 'story' ? '📖 課文導讀' : '👨‍🏫 自然科學老師';
+    const avatar = st.kind === 'story' ? '🧢🧒' : '👨‍🏫';
+    this.playVoiceItem(file, st.text, speaker, avatar);
+  }
+
   speak(keyOrText, customSpeaker) {
+    const preset = this.lines[keyOrText];
+    if (preset) {
+      this.playVoiceItem(preset.file, preset.text, preset.speaker, preset.avatar);
+    } else {
+      this.playVoiceItem(null, keyOrText, customSpeaker || '🌕 月球探索導覽', '🧑‍🚀');
+    }
+  }
+
+  playVoiceItem(audioFile, text, speaker, avatar) {
     const now = Date.now();
     if (now < this.lockUntil) return;
-    this.lockUntil = now + 2200;
+    this.lockUntil = now + 1400;
 
-    const preset = this.lines[keyOrText] || {
-      speaker: customSpeaker || '🌕 月球探索導覽',
-      avatar: '🧑‍🚀',
-      text: keyOrText
-    };
-
+    // 1. 更新 HUD 頂部語音氣泡與逐字字幕
     const bubble = document.getElementById('owner-voice-bubble');
     const avatarEl = document.getElementById('voice-speaker-avatar');
     const nameEl = document.getElementById('voice-speaker-name');
     const subEl = document.getElementById('voice-subtitles');
 
     if (bubble && avatarEl && nameEl && subEl) {
-      avatarEl.textContent = preset.avatar;
-      nameEl.textContent = preset.speaker;
-      subEl.textContent = preset.text;
+      avatarEl.textContent = avatar || '🧑‍🚀';
+      nameEl.textContent = speaker || '🌕 月球探索導覽';
+      subEl.textContent = text;
       bubble.classList.remove('hidden');
 
       if (this._hideTimer) clearTimeout(this._hideTimer);
       this._hideTimer = setTimeout(() => {
         bubble.classList.add('hidden');
-      }, 4200);
+      }, 5500);
     }
 
     if (this.isMuted) return;
 
-    if (window.soundSystem) {
-      window.soundSystem.duck(true);
-      setTimeout(() => {
-        if (window.soundSystem) window.soundSystem.duck(false);
-      }, 2800);
+    // 2. 暫停先前音訊與語音合成
+    if (this.activeAudio) {
+      try {
+        this.activeAudio.pause();
+        this.activeAudio.currentTime = 0;
+      } catch (e) {}
+      this.activeAudio = null;
+    }
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
     }
 
-    try {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(preset.text);
-        utter.lang = 'zh-TW';
-        utter.rate = 1.02;
-        utter.pitch = 1.05;
-        utter.onend = () => {
-          if (window.soundSystem) window.soundSystem.duck(false);
-        };
-        window.speechSynthesis.speak(utter);
+    // 3. 背景音樂平滑壓低 (Audio Ducking)
+    if (window.soundSystem) window.soundSystem.duck(true);
+
+    // 4. 第一步：若身處「登月太空人」視角，播發 NASA 阿波羅 Quindar 2525Hz 開頭提示嗶聲！
+    const isAstronaut = (window.game && window.game.viewMode === 'cat');
+    if (isAstronaut && window.soundSystem) {
+      window.soundSystem.playQuindarBeep(true);
+    }
+
+    const onPlaybackEnd = () => {
+      // 結束通話：播發 NASA Quindar 2475Hz 閉口提示嗶聲
+      if (isAstronaut && window.soundSystem) {
+        window.soundSystem.playQuindarBeep(false);
       }
-    } catch (e) {}
+      if (window.soundSystem) window.soundSystem.duck(false);
+    };
+
+    // 5. 第二步：優先播放 AI 神經網路臺灣親切語音音檔 (MP3)
+    if (audioFile) {
+      const audio = new Audio(audioFile);
+      this.activeAudio = audio;
+      audio.volume = 0.95;
+      audio.onended = onPlaybackEnd;
+      audio.onerror = () => {
+        this.fallbackTTS(text, onPlaybackEnd);
+      };
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          this.fallbackTTS(text, onPlaybackEnd);
+        });
+      }
+    } else {
+      this.fallbackTTS(text, onPlaybackEnd);
+    }
+  }
+
+  fallbackTTS(text, onEnd) {
+    if (!('speechSynthesis' in window)) {
+      if (onEnd) onEnd();
+      return;
+    }
+    try {
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'zh-TW';
+      utter.rate = 0.96;
+      utter.pitch = 1.05;
+      utter.onend = onEnd;
+      utter.onerror = onEnd;
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      if (onEnd) onEnd();
+    }
   }
 }
 

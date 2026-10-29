@@ -230,6 +230,10 @@ class CurriculumSystem {
       }
     };
     modal.classList.add('active');
+
+    if (window.voiceSystem) {
+      window.voiceSystem.speakStation(st.id);
+    }
   }
 
   promptInteract() {
@@ -253,6 +257,10 @@ class CurriculumSystem {
       this.startStationSteps();
     };
     modal.classList.add('active');
+
+    if (window.voiceSystem) {
+      window.voiceSystem.speakStation(st.id);
+    }
   }
 
   startStationSteps() {
@@ -273,6 +281,7 @@ class CurriculumSystem {
   }
 
   renderQuestionModal(q) {
+    this.currentQuestion = q;
     if (this._nextQTimer) {
       clearTimeout(this._nextQTimer);
       this._nextQTimer = null;
@@ -1219,6 +1228,13 @@ class CurriculumSystem {
     this.openStagesModal();
   }
 
+  speakCurrentQuestion() {
+    if (!this.currentQuestion) return;
+    if (window.voiceSystem) {
+      window.voiceSystem.speak(this.currentQuestion.q, '👨‍🏫 自然科學老師');
+    }
+  }
+
   closeModal(modalId) {
     const m = document.getElementById(modalId);
     if (m) {
@@ -1227,6 +1243,17 @@ class CurriculumSystem {
     }
     if (modalId === 'quiz-modal' || modalId === 'station-modal') {
       this.G.mode = 'explore';
+      if (window.voiceSystem && window.voiceSystem.activeAudio) {
+        try {
+          window.voiceSystem.activeAudio.pause();
+          window.voiceSystem.activeAudio.currentTime = 0;
+        } catch (e) {}
+        window.voiceSystem.activeAudio = null;
+      }
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+      if (window.soundSystem) window.soundSystem.duck(false);
     }
   }
 }

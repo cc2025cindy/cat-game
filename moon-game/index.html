@@ -230,7 +230,10 @@
     <div class="modal-card">
       <button class="modal-close" onclick="curriculumSystem.closeModal('station-modal')">✕</button>
       <div class="modal-header">
-        <span class="modal-tag" id="st-modal-badge">第一段・第 1 站</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="modal-tag" id="st-modal-badge">第一段・第 1 站</span>
+          <button id="st-speak-btn" style="background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:4px 10px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="if(window.voiceSystem&&window.curriculumSystem) window.voiceSystem.speakStation(window.curriculumSystem.G.station)">🔊 朗讀課文</button>
+        </div>
         <h2 class="modal-title" id="st-modal-title">站點名稱</h2>
         <div class="modal-desc" id="st-modal-text" style="font-size:16px; line-height:1.8; color:#451a03; background:#fff7ed; padding:16px; border-radius:12px; margin-top:10px;">
           課文內容...
@@ -247,7 +250,10 @@
     <div class="modal-card" style="max-width: 620px;">
       <button class="modal-close" onclick="curriculumSystem.closeModal('quiz-modal')" title="關閉返回遊戲">✕</button>
       <div class="modal-header">
-        <span class="modal-tag" id="quiz-badge">PIRLS【擷取訊息】・第 1 題</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span class="modal-tag" id="quiz-badge">PIRLS【擷取訊息】・第 1 題</span>
+          <button id="quiz-speak-btn" style="background:#fef3c7; border:1px solid #f59e0b; color:#92400e; padding:4px 10px; border-radius:20px; font-size:13px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" onclick="if(window.curriculumSystem) window.curriculumSystem.speakCurrentQuestion()">🔊 朗讀題目</button>
+        </div>
         <h2 class="modal-title" id="quiz-question" style="font-size: 18px; margin-top: 8px;">題目...</h2>
       </div>
       <div id="quiz-options-container"></div>
@@ -383,10 +389,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261029_3"></script>
-  <script src="js/audio.js?v=20261029_3"></script>
-  <script src="js/curriculum.js?v=20261029_3"></script>
-  <script src="js/game.js?v=20261029_3"></script>
+  <script src="js/stations.js?v=20261029_4"></script>
+  <script src="js/audio.js?v=20261029_4"></script>
+  <script src="js/curriculum.js?v=20261029_4"></script>
+  <script src="js/game.js?v=20261029_4"></script>
 
   <script>
     function selectRole(role) {
