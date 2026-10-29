@@ -77,6 +77,7 @@ class GameEngine {
     this.createContactShadows();
     this.createAstronautAvatar();
     this.createTeacherAvatar();
+    this.createCelestialDestinations();
     this.loadGLBModels();
     this.setupInputs();
     this.setupOrbitCameraControls();
@@ -292,21 +293,6 @@ class GameEngine {
     );
     this.skyMoon.position.set(0, 6.2, -9.5);
     this.scene.add(this.skyMoon);
-
-    // 課本第58頁插圖中的橘色土星環星球
-    const saturnGroup = new THREE.Group();
-    const saturn = new THREE.Mesh(
-      new THREE.SphereGeometry(0.65, 24, 24),
-      new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.2 })
-    );
-    const sRing = new THREE.Mesh(
-      new THREE.RingGeometry(0.85, 1.25, 32),
-      new THREE.MeshBasicMaterial({ color: 0xfde68a, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
-    );
-    sRing.rotation.x = Math.PI / 2.4;
-    saturnGroup.add(saturn, sRing);
-    saturnGroup.position.set(-5.5, 5.8, -8.0);
-    this.scene.add(saturnGroup);
 
     // 星空粒子
     const starGeo = new THREE.BufferGeometry();
@@ -1067,6 +1053,30 @@ class GameEngine {
         tag: '生字第 13 站・語詞句型應用',
         desc: '翡翠綠色的星光寶箱裡閃耀著「語文百寶箱水晶」！挑戰「就算……也……」假設強調句型、閱讀寫作手法與易錯字挑錯，完成全課生字語詞大滿貫！',
         reward: '獲得文豪小探險家徽章 + 20 HP！'
+      },
+      {
+        id: 'chest_saturn',
+        name: '神秘寶箱：土星迷你星體 🪐',
+        type: 'saturn_gift',
+        pos: new THREE.Vector3(-3.8, 9.0, -3.2),
+        color: 0xf97316,
+        icon: '🪐',
+        title: '【土星迷你星體太空寶箱】',
+        tag: '高空土星環・星際跳躍探險彩蛋',
+        desc: '<b>恭喜飛躍到土星環！</b><br>你克服了月球引力，跳躍到了課本第 58 頁插圖中的土星環上！<br><br>🪐 <b>宇宙天文冷知識</b>：土星環是由無數微小的冰塊、岩石碎屑與宇宙塵埃組成，在陽光照射下如光環般閃爍！<br><br>✨ <b>星際獎勵</b>：獲得「土星環跳躍家」榮譽徽章，體力大幅補充 +30 HP！',
+        reward: '獲得土星環跳躍家榮譽徽章 + 30 HP！'
+      },
+      {
+        id: 'chest_rabbit',
+        name: '神秘寶箱：玉兔仙境 🐇',
+        type: 'rabbit_gift',
+        pos: new THREE.Vector3(3.2, 13.5, -2.8),
+        color: 0xec4899,
+        icon: '🐇',
+        title: '【玉兔浮空仙島・終極神話寶箱】',
+        tag: '天際最高峰・文學與神話終極秘境',
+        desc: '<b>天哪！你跳到了天際最高的玉兔浮空仙島！</b><br>在傳說中的金黃桂樹下，白玉兔正在搗著長生仙藥！<br><br>🌕 <b>文學的月亮近在身邊</b>：課文說：「科學的月球距離地球那麼遠，文學的月亮則好像近在身邊。」古人的浪漫想像力，如今由你用星光能量跳躍實現了！<br><br>✨ <b>終極祝福</b>：品嚐玉兔仙露，體力瞬間補滿 100 HP，能量充盈！',
+        reward: '品嚐玉兔仙露，體力瞬間全滿 100 HP！'
       }
     ];
 
@@ -1125,6 +1135,22 @@ class GameEngine {
       this.showPrompt('🚀 阿波羅太空挑戰啟動！請在月面上連續完成 3 次低重力跳躍！');
     } else if (chest.def.type === 'vocab') {
       this.openFurnitureModal(chestId);
+    } else if (chest.def.type === 'saturn_gift') {
+      if (window.soundSystem) window.soundSystem.playSuccess();
+      if (window.curriculumSystem) {
+        window.curriculumSystem.G.hp = Math.min(100, window.curriculumSystem.G.hp + 30);
+        window.curriculumSystem.updateHUD();
+      }
+      this.openFurnitureModal(chestId);
+      this.showPrompt('🪐 成功開啟土星環太空寶箱！體力 +30 HP！');
+    } else if (chest.def.type === 'rabbit_gift') {
+      if (window.soundSystem) window.soundSystem.playJadeRabbitChime();
+      if (window.curriculumSystem) {
+        window.curriculumSystem.G.hp = 100;
+        window.curriculumSystem.updateHUD();
+      }
+      this.openFurnitureModal(chestId);
+      this.showPrompt('🐇 成功開啟玉兔仙境寶箱！體力全滿 100 HP！🌕✨');
     }
   }
 
@@ -1174,6 +1200,328 @@ class GameEngine {
       c.visible = false;
     });
     group.add(model);
+  }
+
+  createCelestialDestinations() {
+    this.floatingPlatforms = [
+      {
+        id: 'iss',
+        name: '🛰️ 阿波羅軌道太空站觀景台',
+        center: new THREE.Vector3(0, 5.0, -1.0),
+        radius: 2.6,
+        topY: 5.0
+      },
+      {
+        id: 'saturn',
+        name: '🪐 土星迷你星環平台',
+        center: new THREE.Vector3(-3.8, 9.0, -3.2),
+        radius: 3.5,
+        topY: 9.0
+      },
+      {
+        id: 'rabbit',
+        name: '🐇 玉兔浮空仙島',
+        center: new THREE.Vector3(3.2, 13.5, -2.8),
+        radius: 3.3,
+        topY: 13.5
+      }
+    ];
+
+    // ==========================================
+    // 1. 🛰️ 軌道太空站觀景台 (y = 5.0, center: 0, 5.0, -1.0)
+    // ==========================================
+    const issGroup = new THREE.Group();
+    issGroup.position.set(0, 5.0, -1.0);
+
+    // 主平台圓盤 (直徑 5.2m, 厚 0.35m)
+    const issDeckGeo = new THREE.CylinderGeometry(2.6, 2.4, 0.35, 32);
+    const issDeckMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      metalness: 0.8,
+      roughness: 0.25
+    });
+    const issDeck = new THREE.Mesh(issDeckGeo, issDeckMat);
+    issDeck.position.y = -0.175;
+    issDeck.receiveShadow = true;
+    issGroup.add(issDeck);
+
+    // 平台地面發光科技星軌圈
+    const issRingGeo = new THREE.RingGeometry(1.2, 2.5, 32);
+    const issRingMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.55
+    });
+    const issRing = new THREE.Mesh(issRingGeo, issRingMat);
+    issRing.rotation.x = -Math.PI / 2;
+    issRing.position.y = 0.01;
+    issGroup.add(issRing);
+
+    // 平台中心「反重力躍遷光環 (彈跳板)」
+    const issPadGeo = new THREE.RingGeometry(0.2, 0.85, 24);
+    const issPadMat = new THREE.MeshBasicMaterial({
+      color: 0xfacc15,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.88
+    });
+    const issPad = new THREE.Mesh(issPadGeo, issPadMat);
+    issPad.rotation.x = -Math.PI / 2;
+    issPad.position.y = 0.015;
+    issGroup.add(issPad);
+
+    // 平台邊緣半透明能量防護圍欄
+    const issRailGeo = new THREE.CylinderGeometry(2.6, 2.6, 0.85, 32, 1, true);
+    const issRailMat = new THREE.MeshBasicMaterial({
+      color: 0x0284c7,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.DoubleSide
+    });
+    const issRail = new THREE.Mesh(issRailGeo, issRailMat);
+    issRail.position.y = 0.42;
+    issGroup.add(issRail);
+
+    // 左右雙側巨大藍色太陽能帆板 (Solar Panels)
+    const panelGeo = new THREE.BoxGeometry(3.6, 0.06, 1.2);
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x1e3a8a,
+      emissive: 0x1d4ed8,
+      emissiveIntensity: 0.35,
+      metalness: 0.9,
+      roughness: 0.2
+    });
+    const panelL = new THREE.Mesh(panelGeo, panelMat);
+    panelL.position.set(-4.5, 0.2, 0);
+    const panelR = new THREE.Mesh(panelGeo, panelMat);
+    panelR.position.set(4.5, 0.2, 0);
+    issGroup.add(panelL, panelR);
+
+    // 支撐桁架 (Truss)
+    const trussGeo = new THREE.CylinderGeometry(0.08, 0.08, 9.2, 12);
+    const trussMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
+    const truss = new THREE.Mesh(trussGeo, trussMat);
+    truss.rotation.z = Math.PI / 2;
+    truss.position.set(0, 0.2, 0);
+    issGroup.add(truss);
+
+    // 高增益通訊天線盤
+    const dishGeo = new THREE.ConeGeometry(0.55, 0.3, 24, 1, true);
+    const dishMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8 });
+    const dish = new THREE.Mesh(dishGeo, dishMat);
+    dish.rotation.x = -Math.PI / 3;
+    dish.position.set(0, 0.6, 2.0);
+    issGroup.add(dish);
+
+    // 太空站全息觀景終端 (Console)
+    const consoleGeo = new THREE.BoxGeometry(0.7, 0.85, 0.35);
+    const consoleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0x0284c7, emissiveIntensity: 0.4 });
+    const consoleMesh = new THREE.Mesh(consoleGeo, consoleMat);
+    consoleMesh.position.set(0, 0.42, -1.8);
+    issGroup.add(consoleMesh);
+
+    this.scene.add(issGroup);
+    this.issGroup = issGroup;
+
+    // ==========================================
+    // 2. 🪐 土星迷你星體平台 (y = 9.0, center: -3.8, 9.0, -3.2)
+    // ==========================================
+    const saturnPlatformGroup = new THREE.Group();
+    saturnPlatformGroup.position.set(-3.8, 9.0, -3.2);
+
+    // 橘色條紋土星本體 (半徑 1.35m)
+    const saturnBodyGeo = new THREE.SphereGeometry(1.35, 32, 32);
+    const saturnBodyMat = new THREE.MeshStandardMaterial({
+      color: 0xf97316,
+      emissive: 0xc2410c,
+      emissiveIntensity: 0.3,
+      roughness: 0.5
+    });
+    const saturnBody = new THREE.Mesh(saturnBodyGeo, saturnBodyMat);
+    saturnBody.position.set(0, 0, 0);
+    saturnPlatformGroup.add(saturnBody);
+
+    // 可著陸行走的土星外星環步道 (半徑 1.5m ~ 3.5m, 厚度 0.2m)
+    const saturnRingWalkGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.2, 36);
+    const saturnRingWalkMat = new THREE.MeshStandardMaterial({
+      color: 0xfde047,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.28,
+      transparent: true,
+      opacity: 0.78,
+      roughness: 0.3
+    });
+    const saturnRingWalk = new THREE.Mesh(saturnRingWalkGeo, saturnRingWalkMat);
+    saturnRingWalk.position.y = -0.1;
+    saturnPlatformGroup.add(saturnRingWalk);
+
+    // 環形步道星光微粒圈
+    const sRingGlowGeo = new THREE.RingGeometry(1.8, 3.4, 32);
+    const sRingGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xffedd5,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.65
+    });
+    const sRingGlow = new THREE.Mesh(sRingGlowGeo, sRingGlowMat);
+    sRingGlow.rotation.x = -Math.PI / 2;
+    sRingGlow.position.y = 0.015;
+    saturnPlatformGroup.add(sRingGlow);
+
+    // 土星環跳台「反重力躍遷光環」
+    const sPadGeo = new THREE.RingGeometry(0.2, 0.85, 24);
+    const sPadMat = new THREE.MeshBasicMaterial({
+      color: 0xc084fc,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9
+    });
+    const sPad = new THREE.Mesh(sPadGeo, sPadMat);
+    sPad.rotation.x = -Math.PI / 2;
+    sPad.position.set(0, 0.02, 2.2);
+    saturnPlatformGroup.add(sPad);
+
+    this.scene.add(saturnPlatformGroup);
+    this.saturnPlatformGroup = saturnPlatformGroup;
+
+    // ==========================================
+    // 3. 🐇 玉兔浮空仙島 (y = 13.5, center: 3.2, 13.5, -2.8)
+    // ==========================================
+    const rabbitIslandGroup = new THREE.Group();
+    rabbitIslandGroup.position.set(3.2, 13.5, -2.8);
+
+    // 仙島基岩 (直徑 6.6m, 厚 0.8m)
+    const islandRockGeo = new THREE.CylinderGeometry(3.3, 1.8, 0.8, 24);
+    const islandRockMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.25,
+      roughness: 0.8
+    });
+    const islandRock = new THREE.Mesh(islandRockGeo, islandRockMat);
+    islandRock.position.y = -0.4;
+    rabbitIslandGroup.add(islandRock);
+
+    // 仙島底部漂浮白雲團
+    const cloudCluster = new THREE.Group();
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xfef08a,
+      emissiveIntensity: 0.4,
+      roughness: 0.9,
+      transparent: true,
+      opacity: 0.85
+    });
+    for (let c = 0; c < 8; c++) {
+      const cMesh = new THREE.Mesh(new THREE.SphereGeometry(0.65 + Math.random() * 0.4, 16, 16), cloudMat);
+      const angle = (c / 8) * Math.PI * 2;
+      const r = 1.8 + Math.random() * 0.8;
+      cMesh.position.set(Math.cos(angle) * r, -0.6 - Math.random() * 0.3, Math.sin(angle) * r);
+      cloudCluster.add(cMesh);
+    }
+    rabbitIslandGroup.add(cloudCluster);
+
+    // 仙島表面碧玉草坪
+    const islandGrassGeo = new THREE.RingGeometry(0.3, 3.2, 28);
+    const islandGrassMat = new THREE.MeshBasicMaterial({
+      color: 0xccfbf1,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.88
+    });
+    const islandGrass = new THREE.Mesh(islandGrassGeo, islandGrassMat);
+    islandGrass.rotation.x = -Math.PI / 2;
+    islandGrass.position.y = 0.01;
+    rabbitIslandGroup.add(islandGrass);
+
+    // 金黃桂樹 (Golden Laurel Tree)
+    const treeGroup = new THREE.Group();
+    treeGroup.position.set(-1.4, 0, -1.2);
+    const trunkGeo = new THREE.CylinderGeometry(0.18, 0.26, 1.8, 12);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.y = 0.9;
+    treeGroup.add(trunk);
+
+    const foliageMat = new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 0.5,
+      roughness: 0.4
+    });
+    const fol1 = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), foliageMat);
+    fol1.position.set(0, 2.0, 0);
+    const fol2 = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), foliageMat);
+    fol2.position.set(0.4, 2.5, 0.2);
+    const fol3 = new THREE.Mesh(new THREE.SphereGeometry(0.65, 16, 16), foliageMat);
+    fol3.position.set(-0.4, 2.3, -0.2);
+    treeGroup.add(fol1, fol2, fol3);
+    rabbitIslandGroup.add(treeGroup);
+
+    // 3D 玉兔搗藥雕像 (Cute Jade Rabbit with Mortar & Pestle)
+    const rabbitStatue = this.createJadeRabbitStatue();
+    rabbitStatue.position.set(1.2, 0, -0.6);
+    rabbitStatue.rotation.y = -Math.PI / 3;
+    rabbitIslandGroup.add(rabbitStatue);
+
+    this.scene.add(rabbitIslandGroup);
+    this.rabbitIslandGroup = rabbitIslandGroup;
+  }
+
+  createJadeRabbitStatue() {
+    const group = new THREE.Group();
+    const whiteMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xfef08a,
+      emissiveIntensity: 0.35,
+      roughness: 0.3
+    });
+    // 身體
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 16), whiteMat);
+    body.position.y = 0.35;
+    body.scale.set(1, 1.15, 0.9);
+    group.add(body);
+
+    // 頭部
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+    head.position.set(0, 0.72, 0.1);
+    group.add(head);
+
+    // 兔耳朵
+    const earGeo = new THREE.CylinderGeometry(0.05, 0.07, 0.38, 12);
+    const earL = new THREE.Mesh(earGeo, whiteMat);
+    earL.position.set(-0.12, 1.05, 0.05);
+    earL.rotation.z = 0.2;
+    const earR = new THREE.Mesh(earGeo, whiteMat);
+    earR.position.set(0.12, 1.05, 0.05);
+    earR.rotation.z = -0.2;
+    group.add(earL, earR);
+
+    // 紅眼睛
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), eyeMat);
+    eyeL.position.set(-0.1, 0.78, 0.32);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), eyeMat);
+    eyeR.position.set(0.1, 0.78, 0.32);
+    group.add(eyeL, eyeR);
+
+    // 藥臼 (Mortar)
+    const mortarGeo = new THREE.CylinderGeometry(0.2, 0.14, 0.26, 16);
+    const mortarMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 });
+    const mortar = new THREE.Mesh(mortarGeo, mortarMat);
+    mortar.position.set(0, 0.13, 0.52);
+    group.add(mortar);
+
+    // 藥杵 (Pestle)
+    const pestleGeo = new THREE.CylinderGeometry(0.03, 0.04, 0.42, 10);
+    const pestleMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+    const pestle = new THREE.Mesh(pestleGeo, pestleMat);
+    pestle.position.set(0, 0.32, 0.52);
+    pestle.rotation.x = 0.35;
+    group.add(pestle);
+
+    return group;
   }
 
   loadGLBModels() {
@@ -1888,19 +2236,119 @@ class GameEngine {
   }
 
   /* ==========================================================================
-     月球低重力跳躍與課文互動動作
+     月球低重力跳躍與反重力推進靴系統 (與月光能量星數量即時連動)
      ========================================================================== */
+  getJumpPower() {
+    const cur = window.curriculumSystem;
+    const count = (cur && cur.G && cur.G.feathers) ? cur.G.feathers.length : 0;
+    const isUnlocked = (cur && cur.G && cur.G.unlocked);
+
+    // 教師解鎖模式直接提供宇宙超光速滿級推進
+    if (isUnlocked) {
+      return {
+        level: 5,
+        name: '🌌 宇宙超光速大躍升 (教師全解鎖模式)',
+        velocity: 14.5,
+        multiplier: '340%',
+        color: '#a855f7'
+      };
+    }
+
+    if (count >= 20) {
+      return {
+        level: 5,
+        name: '🌌 星際大躍升 (滿星充能)',
+        velocity: 14.0,
+        multiplier: '320%',
+        color: '#c084fc'
+      };
+    } else if (count >= 14) {
+      return {
+        level: 4,
+        name: '🚀 引力彈弓高空噴射 (Lv.4)',
+        velocity: 11.2,
+        multiplier: '260%',
+        color: '#38bdf8'
+      };
+    } else if (count >= 8) {
+      return {
+        level: 3,
+        name: '✨ 高空軌道漫遊推進 (Lv.3)',
+        velocity: 8.8,
+        multiplier: '200%',
+        color: '#34d399'
+      };
+    } else if (count >= 4) {
+      return {
+        level: 2,
+        name: '⭐ 月光反重力推進靴 (Lv.2)',
+        velocity: 6.8,
+        multiplier: '150%',
+        color: '#fbbf24'
+      };
+    } else {
+      return {
+        level: 1,
+        name: '🌕 基礎月球低重力跳躍 (Lv.1)',
+        velocity: 4.8,
+        multiplier: '100%',
+        color: '#fef08a'
+      };
+    }
+  }
+
+  showBoosterInfo() {
+    const p = this.getJumpPower();
+    const count = (window.curriculumSystem && window.curriculumSystem.G && window.curriculumSystem.G.feathers) ? window.curriculumSystem.G.feathers.length : 0;
+
+    const m = document.getElementById('booster-modal');
+    const content = document.getElementById('booster-modal-content');
+    if (m && content) {
+      content.innerHTML = `
+        <div style="display:flex; align-items:center; justify-content:space-between; background:#fef3c7; border:1px solid #f59e0b; padding:10px 14px; border-radius:10px; margin-bottom:12px;">
+          <div><b>當前狀態：</b><span style="color:#d97706; font-weight:800;">${p.name}</span></div>
+          <div style="background:#ea580c; color:#fff; font-size:12px; font-weight:800; padding:3px 8px; border-radius:12px;">彈跳力 ${p.multiplier}</div>
+        </div>
+        <p style="margin-bottom:8px;">🌟 <b>能量星累積：</b>目前已收集 <b>${count}</b> 顆能量星！每答對 PIRLS 題目或開啟寶箱，推進靴能量就會提升！</p>
+        <hr style="border:none; border-top:1px dashed #d97706; margin:8px 0;">
+        <div style="font-weight:700; color:#9a3412; margin-bottom:6px;">🚀 五大跳躍推進階級與天際三大奇景：</div>
+        <ul style="padding-left:18px; margin:0; font-size:13.5px;">
+          <li style="margin-bottom:4px;"><b>Lv.1（0~3 顆星）</b>：基礎月球跳躍（約 1.8m，月球 1/6 低重力）</li>
+          <li style="margin-bottom:4px;"><b>Lv.2（4~7 顆星）</b>：月光推進靴（約 3.5m，可躍上 <b>🛰️ 阿波羅軌道太空站</b>）</li>
+          <li style="margin-bottom:4px;"><b>Lv.3（8~13 顆星）</b>：高空軌道漫遊（約 6.5m，可飛向 <b>🪐 土星迷你星環平台</b>）</li>
+          <li style="margin-bottom:4px;"><b>Lv.4（14~19 顆星）</b>：引力彈弓高空噴射（約 10m，可跳上 <b>🐇 玉兔浮空仙島</b>）</li>
+          <li style="margin-bottom:4px;"><b>Lv.5（20+ 顆星）</b>：宇宙超光速大躍升（突破 15m，直接擺脫月球地心引力縱覽全景！）</li>
+        </ul>
+        <div style="margin-top:10px; font-size:12.5px; color:#b45309; background:#fff7ed; padding:6px 10px; border-radius:8px;">
+          💡 <b>太空秘笈：</b>各大浮空平台上設有金黃與紫光「反重力躍遷光環」，踏上去跳躍可獲得額外 25% 推進爆發力！
+        </div>
+      `;
+      m.classList.add('active');
+      m.classList.remove('hide');
+    }
+  }
+
   catJump() {
     const now = Date.now();
-    if (this._lastJumpTime && now - this._lastJumpTime < 650) return;
+    if (this._lastJumpTime && now - this._lastJumpTime < 420) return;
     this._lastJumpTime = now;
 
-    if (this.catIsGrounded || this.catPos.y <= 0.05) {
-      // 月球 1/6 低重力輕盈跳躍！
-      this.catVelocityY = 4.2;
+    const baseGround = this.currentGroundY || 0;
+    if (this.catIsGrounded || this.catPos.y <= baseGround + 0.12) {
+      const p = this.getJumpPower();
+      let vy = p.velocity;
+
+      if (this.isOnLaunchPad) {
+        vy *= 1.25;
+        this.showPrompt(`🚀 觸發躍遷光環！星際大推進！${p.name}`);
+      } else {
+        this.showPrompt(`${p.name}！彈跳力 ${p.multiplier}！輕飄飄地升空囉！🌕✨`);
+      }
+
+      this.catVelocityY = vy;
       this.catIsGrounded = false;
       if (window.soundSystem) window.soundSystem.playClick();
-      this.showPrompt('🧑‍🚀 月球低重力跳躍！輕飄飄地飛起來囉！🌕✨');
+      this.spawnHeartsNear(this.catPos);
 
       // 檢查是否進行阿波羅太空低重力跳躍小任務
       if (this.activeChestTask === 'jump') {
@@ -2416,6 +2864,65 @@ class GameEngine {
             }
           }
         ]
+      },
+      iss_console: {
+        icon: '🛰️',
+        title: '【阿波羅軌道太空站觀景終端】',
+        tag: '軌道高空 5 米・俯瞰月球與回望地球',
+        desc: '<b>嗶！全息觀景鏡頭已連線！</b><br>你站在距離月面 5 公尺高的軌道太空站上！<br><br>🌍 <b>從月球回望母星</b>：從這裡看地球，地球是一顆在漆黑太空中緩緩旋轉的蔚藍水晶彈珠！<br><br>🔭 <b>地月距離感</b>：月球距離地球平均三十八萬公里，就算搭噴射飛機也要飛半個月！文學中的月亮卻好像近在身邊，真是奇妙！',
+        actions: [
+          {
+            icon: '🔭',
+            label: '透過太空全息鏡頭俯瞰月球環形山',
+            badge: '天文觀測',
+            run: () => {
+              if (window.soundSystem) window.soundSystem.playClick();
+              this.showPrompt('🛰️ 全息觀景：月面環形山高低錯落，陽光下投射出美麗的玉兔形狀黑影！');
+            }
+          }
+        ]
+      },
+      chest_saturn: {
+        icon: '🪐',
+        title: '【土星迷你星體太空寶箱】',
+        tag: '高空土星環・星際跳躍探險彩蛋',
+        desc: '<b>恭喜飛躍到土星環！</b><br>你克服了月球引力，跳躍到了課本第 58 頁插圖中的土星環上！<br><br>🪐 <b>宇宙天文冷知識</b>：土星環是由無數微小的冰塊、岩石碎屑與宇宙塵埃組成，在陽光照射下如光環般閃爍！<br><br>✨ <b>星際獎勵</b>：獲得「土星環跳躍家」榮譽徽章，體力大幅補充 +30 HP！',
+        actions: [
+          {
+            icon: '🪐',
+            label: '領取土星環跳躍家榮譽徽章（體力 +30 HP）',
+            badge: '星際奇蹟',
+            run: () => {
+              if (window.soundSystem) window.soundSystem.playSuccess();
+              if (window.curriculumSystem) {
+                window.curriculumSystem.G.hp = Math.min(100, window.curriculumSystem.G.hp + 30);
+                window.curriculumSystem.updateHUD();
+              }
+              this.showPrompt('🪐 土星環能量已注入太空衣！');
+            }
+          }
+        ]
+      },
+      chest_rabbit: {
+        icon: '🐇',
+        title: '【玉兔浮空仙島・終極神話寶箱】',
+        tag: '天際最高峰・文學與神話終極秘境',
+        desc: '<b>天哪！你跳到了天際最高的玉兔浮空仙島！</b><br>在傳說中的金黃桂樹下，白玉兔正在搗著長生仙藥！<br><br>🌕 <b>文學的月亮近在身邊</b>：課文說：「科學的月球距離地球那麼遠，文學的月亮則好像近在身邊。」古人的浪漫想像力，如今由你用星光能量跳躍實現了！<br><br>✨ <b>終極祝福</b>：品嚐玉兔仙露，體力瞬間補滿 100 HP，能量充盈！',
+        actions: [
+          {
+            icon: '🥮',
+            label: '品嚐玉兔仙露（體力瞬間全滿 100 HP）',
+            badge: '神話祝福',
+            run: () => {
+              if (window.soundSystem) window.soundSystem.playJadeRabbitChime();
+              if (window.curriculumSystem) {
+                window.curriculumSystem.G.hp = 100;
+                window.curriculumSystem.updateHUD();
+              }
+              this.showPrompt('🐇 仙露甘甜！體力全滿，獲得詩仙李白中秋終極祝福！');
+            }
+          }
+        ]
       }
     };
   }
@@ -2650,6 +3157,27 @@ class GameEngine {
         icon: '🌟',
         pos: new THREE.Vector3(-0.45, 0.5, -3.45),
         action: () => this.openMoonChest('chest_phrase')
+      },
+      {
+        id: 'iss_console',
+        name: '阿波羅軌道太空站 🛰️',
+        icon: '🛰️',
+        pos: new THREE.Vector3(0, 5.4, -2.8),
+        action: () => this.openFurnitureModal('iss_console')
+      },
+      {
+        id: 'chest_saturn',
+        name: '神秘寶箱：土星迷你星體 🪐',
+        icon: '🪐',
+        pos: new THREE.Vector3(-3.8, 9.5, -3.2),
+        action: () => this.openMoonChest('chest_saturn')
+      },
+      {
+        id: 'chest_rabbit',
+        name: '神秘寶箱：玉兔仙境 🐇',
+        icon: '🐇',
+        pos: new THREE.Vector3(3.2, 14.0, -2.8),
+        action: () => this.openMoonChest('chest_rabbit')
       }
     ];
 
@@ -2770,8 +3298,9 @@ class GameEngine {
      ========================================================================== */
   resolveCollision(nextPos) {
     const res = nextPos.clone();
-    res.x = Math.max(-4.5, Math.min(4.5, res.x));
-    res.z = Math.max(-4.2, Math.min(4.2, res.z));
+    const bound = (this.catPos.y > 1.2) ? 6.8 : 4.5;
+    res.x = Math.max(-bound, Math.min(bound, res.x));
+    res.z = Math.max(-bound, Math.min(bound, res.z));
     return res;
   }
 
@@ -2891,16 +3420,63 @@ class GameEngine {
       this.readerMixer.update(delta);
     }
 
+    // 尋找當前所在 (x, z) 座標下方的最高支撐平台
+    let groundY = 0;
+    let currentPlat = null;
+    let onPad = false;
+
+    if (this.floatingPlatforms) {
+      for (const plat of this.floatingPlatforms) {
+        const dx = this.catPos.x - plat.center.x;
+        const dz = this.catPos.z - plat.center.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist <= plat.radius) {
+          if (this.catPos.y >= plat.topY - 0.35) {
+            if (plat.topY > groundY) {
+              groundY = plat.topY;
+              currentPlat = plat;
+              if (dist <= 0.95) onPad = true;
+            }
+          }
+        }
+      }
+    }
+
+    this.currentGroundY = groundY;
+    this.isOnLaunchPad = onPad;
+
     // 月球低重力垂直物理
-    if (!this.catIsGrounded || this.catPos.y > 0) {
+    if (!this.catIsGrounded || this.catPos.y > groundY) {
       this.catPos.y += this.catVelocityY * delta;
       this.catVelocityY -= 6.5 * delta; // 月球低重力緩降
-      if (this.catPos.y <= 0) {
-        this.catPos.y = 0;
+      if (this.catPos.y <= groundY) {
+        this.catPos.y = groundY;
         this.catVelocityY = 0;
         this.catIsGrounded = true;
+
+        if (currentPlat && currentPlat !== this._lastPlatform) {
+          this._lastPlatform = currentPlat;
+          this.onLandPlatform(currentPlat);
+        }
+      } else {
+        this.catIsGrounded = false;
       }
-      if (this.cat) this.cat.position.y = this.catPos.y;
+    } else {
+      this.catPos.y = groundY;
+      if (!currentPlat) this._lastPlatform = null;
+    }
+    if (this.cat) this.cat.position.y = this.catPos.y;
+  }
+
+  onLandPlatform(plat) {
+    if (window.soundSystem) window.soundSystem.playSuccess();
+    this.spawnHeartsNear(this.catPos);
+    if (plat.id === 'iss') {
+      this.showPrompt('🛰️ 成功登陸【阿波羅軌道太空站觀景台】！從 38 萬公里高空俯瞰月球環形山與蔚藍地球！');
+    } else if (plat.id === 'saturn') {
+      this.showPrompt('🪐 成功登陸【土星迷你星環平台】！課本第58頁插圖星體！重力奇妙平衡！');
+    } else if (plat.id === 'rabbit') {
+      this.showPrompt('🐇 成功登陸【玉兔浮空仙島】！桂樹仙境，文學的月亮近在身邊！🌕✨');
     }
   }
 
@@ -2937,7 +3513,7 @@ class GameEngine {
       this.libraryGlobe.rotation.y = time * 0.45;
     }
 
-    // 5. 月球 6 大神秘寶箱頂部能量晶石旋轉與光環微動
+    // 5. 月球神秘寶箱頂部能量晶石旋轉與光環微動
     if (this.moonChests) {
       this.moonChests.forEach((mc, idx) => {
         if (mc.gem) {
@@ -2948,6 +3524,17 @@ class GameEngine {
           mc.ring.scale.setScalar(1.0 + Math.sin(time * 2.5 + idx) * 0.06);
         }
       });
+    }
+
+    // 6. 三大天體平台（太空站、土星星環、玉兔仙島）動態效果
+    if (this.issGroup) {
+      this.issGroup.position.y = 5.0 + Math.sin(time * 1.5) * 0.08;
+    }
+    if (this.saturnPlatformGroup) {
+      this.saturnPlatformGroup.rotation.y = time * 0.08;
+    }
+    if (this.rabbitIslandGroup) {
+      this.rabbitIslandGroup.position.y = 13.5 + Math.sin(time * 1.2) * 0.12;
     }
   }
 
@@ -2975,10 +3562,14 @@ class GameEngine {
   }
 
   updateShadows() {
+    const baseGround = this.currentGroundY || 0;
     if (this.catShadow && this.cat) {
       this.catShadow.position.x = this.catPos.x;
       this.catShadow.position.z = this.catPos.z;
-      this.catShadow.position.y = 0.004;
+      this.catShadow.position.y = baseGround + 0.005;
+      const heightAbove = Math.max(0, this.catPos.y - baseGround);
+      const shadowScale = Math.max(0.28, 1.0 - heightAbove * 0.12);
+      this.catShadow.scale.set(shadowScale, shadowScale, shadowScale);
     }
     if (this.playerShadow && this.player) {
       this.playerShadow.position.x = this.playerPos.x;
@@ -2999,8 +3590,8 @@ class GameEngine {
       this.glowingAuras.forEach((aura, i) => {
         const spot = this.interactiveSpots[i];
         if (!spot) return;
-        const distXZ = Math.hypot(currentHeroPos.x - spot.pos.x, currentHeroPos.z - spot.pos.z);
-        const isNear = distXZ < 1.75;
+        const dist3D = Math.hypot(currentHeroPos.x - spot.pos.x, (currentHeroPos.y - spot.pos.y) * 1.5, currentHeroPos.z - spot.pos.z);
+        const isNear = dist3D < 1.85;
 
         aura.crystal.rotation.y = time * 2.2 + aura.phase;
         aura.crystal.position.y = aura.baseY + Math.sin(time * 3.5 + aura.phase) * 0.06;
@@ -3013,9 +3604,9 @@ class GameEngine {
     }
 
     this.spotElements.forEach(({ spot }) => {
-      const distXZ = Math.hypot(currentHeroPos.x - spot.pos.x, currentHeroPos.z - spot.pos.z);
-      if (distXZ < 1.75 && distXZ < closestDist) {
-        closestDist = distXZ;
+      const dist3D = Math.hypot(currentHeroPos.x - spot.pos.x, (currentHeroPos.y - spot.pos.y) * 1.5, currentHeroPos.z - spot.pos.z);
+      if (dist3D < 1.85 && dist3D < closestDist) {
+        closestDist = dist3D;
         closestSpot = spot;
       }
     });
@@ -3023,7 +3614,7 @@ class GameEngine {
     this.nearbySpot = closestSpot;
 
     this.spotElements.forEach(({ spot, bubble }) => {
-      if (closestSpot && spot.id === closestSpot.id && closestDist < 1.75) {
+      if (closestSpot && spot.id === closestSpot.id && closestDist < 1.85) {
         tempV.copy(spot.pos);
         tempV.y += 0.45;
         tempV.project(this.camera);

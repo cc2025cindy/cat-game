@@ -118,8 +118,8 @@
           <span id="hp-text" class="hp-text">100 HP</span>
         </div>
 
-        <!-- 月光能量星收集 -->
-        <div class="stat-pill" style="border: 2px solid #f6ad55; background: #fffcf8;">
+        <!-- 月光能量星收集與反重力推進靴 -->
+        <div class="stat-pill" style="border: 2px solid #f6ad55; background: #fffcf8; cursor:pointer;" onclick="if(window.game) window.game.showBoosterInfo()" title="點擊查看反重力推進靴彈跳等級與三大天體">
           <span class="icon">🌟</span>
           <span id="treat-display">能量星 x 0</span>
         </div>
@@ -388,11 +388,25 @@
     </div>
   </div>
 
+  <!-- 反重力推進靴與星際跳躍資訊彈窗 -->
+  <div class="modal-overlay" id="booster-modal">
+    <div class="modal-card" style="max-width: 540px; text-align: center;">
+      <button class="modal-close" onclick="curriculumSystem.closeModal('booster-modal')">✕</button>
+      <div style="font-size: 42px; margin-bottom: 4px;">🚀⭐🪐🐇</div>
+      <h2 style="font-size: 21px; font-weight: 900; color: #7c2d12; margin-bottom: 8px;">月光反重力推進靴系統</h2>
+      <div id="booster-modal-content" style="text-align: left; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 14px; font-size: 14px; line-height: 1.75; color: #451a03; max-height: 60vh; overflow-y: auto;">
+      </div>
+      <div style="margin-top: 12px;">
+        <button class="btn-confirm" onclick="curriculumSystem.closeModal('booster-modal')" style="width: 100%;">我知道了，去大跳躍！🚀</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261029_5"></script>
-  <script src="js/audio.js?v=20261029_5"></script>
-  <script src="js/curriculum.js?v=20261029_5"></script>
-  <script src="js/game.js?v=20261029_5"></script>
+  <script src="js/stations.js?v=20261029_6"></script>
+  <script src="js/audio.js?v=20261029_6"></script>
+  <script src="js/curriculum.js?v=20261029_6"></script>
+  <script src="js/game.js?v=20261029_6"></script>
 
   <script>
     function selectRole(role) {

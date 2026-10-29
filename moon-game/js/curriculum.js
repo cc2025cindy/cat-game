@@ -912,7 +912,9 @@ class CurriculumSystem {
 
     const treatDisp = document.getElementById('treat-display');
     if (treatDisp) {
-      treatDisp.innerText = `能量星 x ${this.G.feathers.length}`;
+      const p = (window.game && typeof window.game.getJumpPower === 'function') ? window.game.getJumpPower() : null;
+      const lvlStr = p ? ` (推進靴 Lv.${p.level})` : '';
+      treatDisp.innerText = `能量星 x ${this.G.feathers.length}${lvlStr}`;
     }
 
     const st = this.ST[this.G.station] || this.ST[this.ST.length - 1];
