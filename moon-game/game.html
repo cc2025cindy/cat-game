@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>《又遠又近的月亮：3D 登月奇航》沉浸式教育遊戲</title>
-  <link rel="stylesheet" href="css/style.css?v=20261029_1">
+  <link rel="stylesheet" href="css/style.css?v=20261029_2">
   <!-- Three.js 核心庫 (CDN) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -43,7 +43,7 @@
         <button id="tQrcode" class="btn-secondary" style="background: #eff6ff; border-color: #60a5fa; color: #1d4ed8;" onclick="openQrModal()">📱 手機掃描 QR Code ＆ 讀報重點</button>
       </div>
       <div class="title-teacher-row">
-        <input id="teacherPw" type="password" placeholder="請輸入教師密碼 (ijun)">
+        <input id="teacherPw" type="password" placeholder="請輸入教師密碼">
         <button class="btn-teacher" onclick="curriculumSystem.unlockAllStages(document.getElementById('teacherPw').value)">解鎖</button>
       </div>
     </div>
@@ -251,19 +251,31 @@
     </div>
   </div>
 
-  <!-- 通關姓名輸入彈窗 -->
-  <div class="modal-overlay" id="name-input-modal">
-    <div class="modal-card" style="max-width: 440px; text-align: center;">
-      <div style="font-size: 48px; margin-bottom: 8px;">🏆🌕</div>
-      <h2 style="font-size: 22px; font-weight: 900; color: #9a3412; margin-bottom: 8px;">恭喜全課通關！</h2>
-      <p style="font-size: 14px; color: #64748b; margin-bottom: 14px;">
-        你已完成〈又遠又近的月亮〉全部 5 幕 14 站閱讀與生字挑戰！<br>
-        <b style="color: #c2410c;">請務必輸入你自己的姓名</b>，系統將為你印製專屬結業證書：
-      </p>
-      <input id="student-name-input" type="text" placeholder="請在此輸入你的真實姓名..." style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 2px solid #fed7aa; font-size: 16px; text-align: center; margin-bottom: 8px; outline: none;" value="" onkeydown="if(event.key==='Enter') curriculumSystem.finishAndGenerateCertificate(this.value)">
-      <div id="name-input-error" style="display: none; color: #e11d48; font-size: 13px; font-weight: 800; margin-bottom: 12px; background: #fff1f2; padding: 8px 10px; border-radius: 8px; border: 1px solid #fecdd3;"></div>
-      <button class="btn-confirm" style="width: 100%; margin-top: 4px;" onclick="curriculumSystem.finishAndGenerateCertificate(document.getElementById('student-name-input').value)">
-        領取結業證書 📜
+  <!-- 通關姓名輸入彈窗 (留空必填並強化視覺提醒，與上一款遊戲完全一致) -->
+  <div class="modal-overlay" id="name-input-modal" style="z-index: 260;">
+    <div class="modal-card" style="max-width: 480px; text-align: center; border: 3px solid #f59e0b;">
+      <div style="font-size: 46px; margin-bottom: 4px;">🏆🌕✍️</div>
+      <h2 style="font-size: 23px; font-weight: 900; color: #9a3412; margin-bottom: 6px;">恭喜全課通關！請填寫你的姓名</h2>
+      <div style="background: #fef3c7; border: 2px dashed #d97706; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; text-align: left;">
+        <div style="font-size: 14.5px; font-weight: 900; color: #b45309; margin-bottom: 3px;">
+          ⚠️ 重要提醒：請在下方空白處輸入「你自己的姓名」！
+        </div>
+        <div style="font-size: 12.5px; color: #78350f;">
+          輸入完成後再按「領取結業證書」，你的名字就會印在專屬獎狀上喔！
+        </div>
+      </div>
+      <label for="student-name-input" style="display:block; font-size: 15px; font-weight: 900; color: #7c2d12; margin-bottom: 8px;">
+        👇 請在此點選並輸入你的姓名（必填）：
+      </label>
+      <input id="student-name-input" type="text" placeholder="請點此輸入你的姓名（不可空白）" value="" autocomplete="off"
+        oninput="this.style.borderColor='#10b981'; this.style.backgroundColor='#ffffff'; const err=document.getElementById('name-input-error'); if(err) err.style.display='none';"
+        onkeydown="if(event.key==='Enter') curriculumSystem.finishAndGenerateCertificate(this.value)"
+        style="width: 100%; padding: 14px 16px; border-radius: 14px; border: 3px solid #f59e0b; background: #fffbeb; font-size: 20px; font-weight: 900; color: #1c1917; text-align: center; margin-bottom: 10px; outline: none; box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);" />
+      <div id="name-input-error" style="display:none; background:#fef2f2; border:1.5px solid #ef4444; color:#dc2626; font-size:13.5px; font-weight:800; padding:8px 12px; border-radius:10px; margin-bottom:12px;">
+        ⚠️ 請先輸入你自己的姓名，才能領取結業證書喔！
+      </div>
+      <button class="btn-confirm" style="width: 100%; font-size: 16px; padding: 12px 18px;" onclick="curriculumSystem.finishAndGenerateCertificate(document.getElementById('student-name-input').value)">
+        ✅ 我已填好姓名，領取結業證書 📜
       </button>
     </div>
   </div>
@@ -279,7 +291,7 @@
       </div>
       <div class="cert-btn-row">
         <button id="certDl" class="btn-confirm" onclick="curriculumSystem.downloadCertificate()">📥 下載證書 (PNG)</button>
-        <button class="btn-cancel" style="background: #fef3c7; color: #9a3412; border: 1.5px solid #f59e0b;" onclick="curriculumSystem.editCertificateName()">✏️ 修改姓名重印</button>
+        <button id="certEditName" class="btn-secondary" style="background:#fef3c7; border-color:#f59e0b; color:#9a3412;" onclick="curriculumSystem.editCertificateName()">✏️ 重新填寫姓名</button>
         <button id="certClose" class="btn-cancel" onclick="closeCert()">關閉</button>
       </div>
     </div>
@@ -295,7 +307,7 @@
       </div>
       <div id="stages-list" style="max-height: 55vh; overflow-y: auto; margin: 12px 0;"></div>
       <div class="modal-footer" style="display:flex; gap:8px;">
-        <input id="stagesTeacherPw" type="password" placeholder="請輸入教師密碼 (ijun)" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
+        <input id="stagesTeacherPw" type="password" placeholder="請輸入教師密碼" style="flex:1; padding:8px 12px; border-radius:10px; border:1.5px solid #fed7aa;">
         <button class="btn-confirm" onclick="curriculumSystem.unlockAllStages(document.getElementById('stagesTeacherPw').value)">密碼解鎖</button>
       </div>
     </div>
@@ -367,10 +379,10 @@
   </div>
 
   <!-- 依序載入關卡題庫、音效系統、教學邏輯與 3D 引擎 -->
-  <script src="js/stations.js?v=20261029_1"></script>
-  <script src="js/audio.js?v=20261029_1"></script>
-  <script src="js/curriculum.js?v=20261029_1"></script>
-  <script src="js/game.js?v=20261029_1"></script>
+  <script src="js/stations.js?v=20261029_2"></script>
+  <script src="js/audio.js?v=20261029_2"></script>
+  <script src="js/curriculum.js?v=20261029_2"></script>
+  <script src="js/game.js?v=20261029_2"></script>
 
   <script>
     function selectRole(role) {

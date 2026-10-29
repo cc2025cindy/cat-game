@@ -957,13 +957,13 @@ class CurriculumSystem {
   }
 
   unlockAllStages(pw) {
-    if (pw === 'ijun' || pw === '1212') {
+    if (pw === '1212') {
       this.G.unlocked = true;
       this.saveGame();
       alert(`🔓 教師密碼正確！已成功解鎖全課 ${this.ST.length} 個站點（含生字語詞書櫃關卡）！`);
       this.openStagesModal();
     } else {
-      alert('❌ 密碼錯誤，請輸入教師密碼 ijun！');
+      alert('❌ 密碼錯誤，請確認教師密碼！');
     }
   }
 
