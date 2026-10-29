@@ -231,8 +231,9 @@ class CurriculumSystem {
     };
     modal.classList.add('active');
 
+    // 不自動播放，重置朗讀按鈕狀態，待學生點擊才播放
     if (window.voiceSystem) {
-      window.voiceSystem.speakStation(st.id);
+      window.voiceSystem.resetSpeakBtn();
     }
   }
 
@@ -258,8 +259,9 @@ class CurriculumSystem {
     };
     modal.classList.add('active');
 
+    // 不自動播放，重置朗讀按鈕狀態，待學生點擊才播放
     if (window.voiceSystem) {
-      window.voiceSystem.speakStation(st.id);
+      window.voiceSystem.resetSpeakBtn();
     }
   }
 
@@ -1231,7 +1233,7 @@ class CurriculumSystem {
   speakCurrentQuestion() {
     if (!this.currentQuestion) return;
     if (window.voiceSystem) {
-      window.voiceSystem.speak(this.currentQuestion.q, '👨‍🏫 自然科學老師');
+      window.voiceSystem.speak(this.currentQuestion.q, '👨‍🏫 自然科學老師', 'quiz-speak-btn');
     }
   }
 
@@ -1243,17 +1245,9 @@ class CurriculumSystem {
     }
     if (modalId === 'quiz-modal' || modalId === 'station-modal') {
       this.G.mode = 'explore';
-      if (window.voiceSystem && window.voiceSystem.activeAudio) {
-        try {
-          window.voiceSystem.activeAudio.pause();
-          window.voiceSystem.activeAudio.currentTime = 0;
-        } catch (e) {}
-        window.voiceSystem.activeAudio = null;
+      if (window.voiceSystem) {
+        window.voiceSystem.stop();
       }
-      if ('speechSynthesis' in window) {
-        try { window.speechSynthesis.cancel(); } catch (e) {}
-      }
-      if (window.soundSystem) window.soundSystem.duck(false);
     }
   }
 }

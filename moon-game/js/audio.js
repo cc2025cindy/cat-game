@@ -419,25 +419,74 @@ class VoiceSystem {
     const st = (window.ST && window.ST[stationIdx]) ? window.ST[stationIdx] : null;
     if (!st) return;
 
+    // 若當前正有語音播放，再次點擊按鈕則切換為停止
+    if (this.activeAudio && !this.activeAudio.paused) {
+      this.stop();
+      return;
+    }
+
     const file = `audio/voice/station_${stationIdx}.mp3`;
-    const speaker = st.kind === 'story' ? '📖 課文導讀' : '👨‍🏫 自然科學老師';
-    const avatar = st.kind === 'story' ? '🧢🧒' : '👨‍🏫';
-    this.playVoiceItem(file, st.text, speaker, avatar);
+    const speaker = st.kind === 'story' ? '📖 課文朗讀' : '👨‍🏫 課文導讀';
+    const avatar = '👩‍🏫';
+    this.playVoiceItem(file, st.text, speaker, avatar, 'st-speak-btn');
   }
 
-  speak(keyOrText, customSpeaker) {
-    const preset = this.lines[keyOrText];
-    if (preset) {
-      this.playVoiceItem(preset.file, preset.text, preset.speaker, preset.avatar);
+  stop() {
+    if (this.activeAudio) {
+      try {
+        this.activeAudio.pause();
+        this.activeAudio.currentTime = 0;
+      } catch (e) {}
+      this.activeAudio = null;
+    }
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
+    if (window.soundSystem) window.soundSystem.duck(false);
+    this.resetSpeakBtn();
+  }
+
+  setSpeakBtnActive(btnId, isSpeaking) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    if (isSpeaking) {
+      if (!btn.dataset.originHtml) btn.dataset.originHtml = btn.innerHTML;
+      btn.innerHTML = '⏹️ 停止朗讀';
+      btn.style.background = '#fee2e2';
+      btn.style.borderColor = '#ef4444';
+      btn.style.color = '#991b1b';
     } else {
-      this.playVoiceItem(null, keyOrText, customSpeaker || '🌕 月球探索導覽', '🧑‍🚀');
+      if (btn.dataset.originHtml) {
+        btn.innerHTML = btn.dataset.originHtml;
+      }
+      btn.style.background = '#fef3c7';
+      btn.style.borderColor = '#f59e0b';
+      btn.style.color = '#92400e';
     }
   }
 
-  playVoiceItem(audioFile, text, speaker, avatar) {
+  resetSpeakBtn() {
+    this.setSpeakBtnActive('st-speak-btn', false);
+    this.setSpeakBtnActive('quiz-speak-btn', false);
+  }
+
+  speak(keyOrText, customSpeaker, sourceBtnId) {
+    if (this.activeAudio && !this.activeAudio.paused && sourceBtnId) {
+      this.stop();
+      return;
+    }
+    const preset = this.lines[keyOrText];
+    if (preset) {
+      this.playVoiceItem(preset.file, preset.text, preset.speaker, preset.avatar, sourceBtnId);
+    } else {
+      this.playVoiceItem(null, keyOrText, customSpeaker || '🌕 月球探索導覽', '🧑‍🚀', sourceBtnId);
+    }
+  }
+
+  playVoiceItem(audioFile, text, speaker, avatar, sourceBtnId) {
     const now = Date.now();
     if (now < this.lockUntil) return;
-    this.lockUntil = now + 1400;
+    this.lockUntil = now + 1000;
 
     // 1. 更新 HUD 頂部語音氣泡與逐字字幕
     const bubble = document.getElementById('owner-voice-bubble');
@@ -473,6 +522,7 @@ class VoiceSystem {
 
     // 3. 背景音樂平滑壓低 (Audio Ducking)
     if (window.soundSystem) window.soundSystem.duck(true);
+    if (sourceBtnId) this.setSpeakBtnActive(sourceBtnId, true);
 
     // 4. 第一步：若身處「登月太空人」視角，播發 NASA 阿波羅 Quindar 2525Hz 開頭提示嗶聲！
     const isAstronaut = (window.game && window.game.viewMode === 'cat');
@@ -486,6 +536,8 @@ class VoiceSystem {
         window.soundSystem.playQuindarBeep(false);
       }
       if (window.soundSystem) window.soundSystem.duck(false);
+      if (sourceBtnId) this.setSpeakBtnActive(sourceBtnId, false);
+      this.activeAudio = null;
     };
 
     // 5. 第二步：優先播放 AI 神經網路臺灣親切語音音檔 (MP3)
