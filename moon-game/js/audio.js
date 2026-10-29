@@ -20,6 +20,7 @@ class SoundSystem {
     this.bgmTimer = null;
     this.bgmStep = 0;
     this.sfxLockUntil = 0;
+    this.bgmAudio = null;
   }
 
   init() {
@@ -41,6 +42,17 @@ class SoundSystem {
     this.sfxGain.connect(this.masterGain);
   }
 
+  initAudioElement() {
+    if (this.bgmAudio) return;
+    try {
+      this.bgmAudio = new Audio('audio/bgm.mp3');
+      this.bgmAudio.loop = true;
+      this.bgmAudio.volume = this.isMuted ? 0 : (this.isDucked ? 0.05 : 0.35);
+    } catch (e) {
+      this.bgmAudio = null;
+    }
+  }
+
   resume() {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
@@ -50,6 +62,10 @@ class SoundSystem {
   toggleMute() {
     this.init();
     this.isMuted = !this.isMuted;
+    if (this.bgmAudio) {
+      this.bgmAudio.muted = this.isMuted;
+      this.bgmAudio.volume = this.isMuted ? 0 : (this.isDucked ? 0.05 : 0.35);
+    }
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.85, this.ctx.currentTime);
     }
@@ -64,6 +80,9 @@ class SoundSystem {
 
   duck(enable) {
     this.isDucked = !!enable;
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = (this.isMuted || !this.bgmPlaying) ? 0 : (this.isDucked ? 0.05 : 0.35);
+    }
     if (!this.bgmGain || !this.ctx) return;
     const targetVol = (this.isMuted || !this.bgmPlaying) ? 0 : (this.isDucked ? 0.03 : 0.2);
     this.bgmGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.15);
@@ -78,15 +97,31 @@ class SoundSystem {
     this.resume();
     if (this.bgmPlaying) return true;
     this.bgmPlaying = true;
-    if (this.bgmGain && this.ctx) {
-      this.bgmGain.gain.setTargetAtTime(this.isDucked ? 0.03 : 0.2, this.ctx.currentTime, 0.2);
+    this.initAudioElement();
+
+    let playedExternal = false;
+    if (this.bgmAudio) {
+      this.bgmAudio.volume = this.isMuted ? 0 : (this.isDucked ? 0.05 : 0.35);
+      const playPromise = this.bgmAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          playedExternal = true;
+        }).catch((err) => {
+          // If browser policy blocks audio element or file missing, fallback to synth
+          this.scheduleBGMLoop();
+        });
+      }
+    } else {
+      this.scheduleBGMLoop();
     }
-    this.scheduleBGMLoop();
     return true;
   }
 
   stopBGM() {
     this.bgmPlaying = false;
+    if (this.bgmAudio) {
+      this.bgmAudio.pause();
+    }
     if (this.bgmTimer) {
       clearTimeout(this.bgmTimer);
       this.bgmTimer = null;
