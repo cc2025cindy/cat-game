@@ -1027,166 +1027,477 @@ class GameEngine {
      規範落實：
      - MeshStandardMaterial 卡通色塊材質 (橘色主毛、純白肚子、白襪子、粉嫩耳鼻)
      - 一致腳底原點 (貓掌觸地 y = 0，絕不穿透地面)
-     - 大眼有神、可愛臉蛋、紅項圈金鈴鐺、白尾尖，縮小依舊辨識度極高
+     - 依課本插圖（P.56 窗台抬爪、P.58 沙發四腳朝天翻肚）精細立體建模
+     - 暖橘虎斑條紋、倒V開臉澎澎白臉頰、琥珀金大眼／彎彎笑眼切換、毛茸茸大白肚、四隻白襪子與立體粉紅肉球（掌墊＋4趾墊）
      ========================================================================== */
+  createTabbyFurTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // 暖蜜橘漸層底色（水彩繪本柔和筆觸）
+    const grad = ctx.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, '#ec9a52');
+    grad.addColorStop(0.5, '#e5893e');
+    grad.addColorStop(1, '#d9782e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // 柔和淺蜜色毛流感
+    ctx.strokeStyle = 'rgba(253, 213, 168, 0.32)';
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 140; i++) {
+      const x = (i * 37) % 512;
+      const y = (i * 53) % 512;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + 12, y + 6, x + 24, y + 2);
+      ctx.stroke();
+    }
+
+    // 焦糖深橘棕虎斑條紋（課本插圖背部與體側手繪感斑紋）
+    ctx.fillStyle = 'rgba(176, 82, 26, 0.62)';
+    const stripePositions = [45, 105, 168, 232, 295, 358, 420, 475];
+    stripePositions.forEach((sx, idx) => {
+      ctx.beginPath();
+      ctx.ellipse(sx, 256 + ((idx % 2) * 24 - 12), 16, 195, (idx % 2 === 0 ? 0.08 : -0.08), 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  createWhiteFurTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createRadialGradient(128, 128, 20, 128, 128, 140);
+    grad.addColorStop(0, '#fffefb');
+    grad.addColorStop(0.75, '#fbf5ee');
+    grad.addColorStop(1, '#f1e4d6');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+
+    // 細膩暖米白絨毛筆觸
+    ctx.strokeStyle = 'rgba(228, 210, 192, 0.45)';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 80; i++) {
+      const x = (i * 29) % 240;
+      const y = (i * 41) % 240;
+      ctx.beginPath();
+      ctx.arc(x + 8, y + 8, 10, 0.2, 1.8);
+      ctx.stroke();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  createTailRingTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#e68a3f';
+    ctx.fillRect(0, 0, 128, 512);
+
+    // 課本插圖尾巴一圈一圈的焦糖虎斑環紋
+    ctx.fillStyle = '#a84b17';
+    for (let y = 36; y < 460; y += 64) {
+      ctx.beginPath();
+      ctx.ellipse(64, y, 64, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 尾尖深暖橘棕漸層
+    ctx.fillStyle = '#b6541c';
+    ctx.fillRect(0, 455, 128, 57);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
   createCat() {
     this.cat = new THREE.Group();
 
-    // 規範色塊材質
-    const orangeFur = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.52, metalness: 0.04 });
-    const whiteFur = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.02 });
-    const pinkMat = new THREE.MeshStandardMaterial({ color: 0xfb7185, roughness: 0.45 });
+    // 課本插圖專屬水彩筆觸材質
+    const tabbyTex = this.createTabbyFurTexture();
+    const whiteTex = this.createWhiteFurTexture();
+    const tailTex = this.createTailRingTexture();
 
-    // 內部獨立模型骨架群組（便於平滑翻肚過渡，確保無論站立或翻肚，底部絕不穿入地面/沙發）
+    const orangeFur = new THREE.MeshStandardMaterial({
+      map: tabbyTex,
+      color: 0xffffff,
+      roughness: 0.68,
+      metalness: 0.02
+    });
+    const darkStripeMat = new THREE.MeshStandardMaterial({
+      color: 0xb4551d,
+      roughness: 0.72,
+      metalness: 0.02
+    });
+    const whiteFur = new THREE.MeshStandardMaterial({
+      map: whiteTex,
+      color: 0xffffff,
+      roughness: 0.65,
+      metalness: 0.01
+    });
+    const pinkMat = new THREE.MeshStandardMaterial({
+      color: 0xf48b94,
+      roughness: 0.48,
+      metalness: 0.02
+    });
+    const pawBeanMat = new THREE.MeshStandardMaterial({
+      color: 0xf2788b,
+      roughness: 0.42,
+      metalness: 0.03
+    });
+    const tailMat = new THREE.MeshStandardMaterial({
+      map: tailTex,
+      color: 0xffffff,
+      roughness: 0.68,
+      metalness: 0.02
+    });
+
+    // 內部獨立模型骨架群組（站立時 y = 0.20 四足踏地 y = 0；翻肚或坐窗台時平滑插值）
     this.catMeshGroup = new THREE.Group();
     this.catMeshGroup.position.set(0, 0.20, 0);
     this.cat.add(this.catMeshGroup);
 
-    // 1. 貓身 (中心對齊 catMeshGroup)
-    const bodyGeo = new THREE.SphereGeometry(0.22, 18, 14);
-    bodyGeo.scale(1.28, 0.92, 0.88);
+    // 1. 圓潤梨形橘虎斑貓身（對應課本插圖圓滾滾的身材）
+    const bodyGeo = new THREE.SphereGeometry(0.22, 24, 20);
+    bodyGeo.scale(1.32, 0.96, 0.96);
     const body = new THREE.Mesh(bodyGeo, orangeFur);
-    body.position.set(0, 0.02, 0);
+    body.position.set(-0.01, 0.025, 0);
     body.castShadow = true;
     this.catMeshGroup.add(body);
     this.catBody = body;
 
-    // 2. 毛茸茸的白肚子（大色塊白被子，翻肚時自然朝天顯露）
-    const bellyGeo = new THREE.SphereGeometry(0.19, 16, 12);
-    bellyGeo.scale(1.0, 0.88, 0.94);
-    const belly = new THREE.Mesh(bellyGeo, whiteFur);
-    belly.position.set(0, -0.02, 0.06);
-    this.catMeshGroup.add(belly);
-    this.catBelly = belly;
+    // 後臀與大腿兩側圓潤肉感（課本 P.58 翻肚時圓胖的後腿輪廓）
+    [-1, 1].forEach(side => {
+      const haunch = new THREE.Mesh(new THREE.SphereGeometry(0.135, 16, 14), orangeFur);
+      haunch.scale.set(1.15, 0.95, 0.88);
+      haunch.position.set(-0.15, -0.01, side * 0.105);
+      haunch.castShadow = true;
+      this.catMeshGroup.add(haunch);
+    });
 
-    // 3. 貓頭
+    // 2. 毛茸茸的大白肚肚與胸前蓬鬆白毛（課本第三段：「毛茸茸的肚子，看起來像蓋上了一條白色小被子」）
+    const bellyGroup = new THREE.Group();
+    const mainBellyGeo = new THREE.SphereGeometry(0.205, 22, 18);
+    mainBellyGeo.scale(1.24, 0.86, 0.94);
+    const mainBelly = new THREE.Mesh(mainBellyGeo, whiteFur);
+    mainBelly.position.set(0.0, -0.042, 0);
+    bellyGroup.add(mainBelly);
+
+    // 胸前蓬鬆白圍巾毛（連接下巴與白肚肚，對應 P.56 與 P.58 胸口白毛）
+    const chestRuffGeo = new THREE.SphereGeometry(0.145, 18, 14);
+    chestRuffGeo.scale(1.05, 0.95, 1.02);
+    const chestRuff = new THREE.Mesh(chestRuffGeo, whiteFur);
+    chestRuff.position.set(0.19, 0.015, 0);
+    bellyGroup.add(chestRuff);
+
+    // 下腹部蓬鬆白毛延伸至後腿間
+    const lowerBellyGeo = new THREE.SphereGeometry(0.14, 16, 12);
+    lowerBellyGeo.scale(1.1, 0.82, 0.92);
+    const lowerBelly = new THREE.Mesh(lowerBellyGeo, whiteFur);
+    lowerBelly.position.set(-0.14, -0.048, 0);
+    bellyGroup.add(lowerBelly);
+
+    this.catMeshGroup.add(bellyGroup);
+    this.catBelly = bellyGroup;
+
+    // 3. 貓頭（外層 headGroup 負責點頭/歪頭動畫，內層 headFace 旋正 +X 為正前方）
     const headGroup = new THREE.Group();
-    headGroup.position.set(0.26, 0.12, 0);
+    headGroup.position.set(0.25, 0.13, 0);
 
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 18, 16), orangeFur);
-    head.castShadow = true;
-    headGroup.add(head);
+    const headFace = new THREE.Group();
+    headFace.rotation.y = Math.PI / 2; // 讓臉部正對 +X（貓咪前進方向）
+    headGroup.add(headFace);
 
-    // 白色口吻包子臉
-    const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), whiteFur);
-    muzzle.position.set(0, -0.04, 0.13);
-    muzzle.scale.set(1.25, 0.82, 0.95);
-    headGroup.add(muzzle);
+    // 橘虎斑頭顱上半部
+    const headCrownGeo = new THREE.SphereGeometry(0.175, 24, 20);
+    headCrownGeo.scale(1.14, 0.97, 1.02);
+    const headCrown = new THREE.Mesh(headCrownGeo, orangeFur);
+    headCrown.castShadow = true;
+    headFace.add(headCrown);
 
-    // 粉紅小鼻子
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.02, 6), pinkMat);
+    // 額頭三道經典虎斑條紋（課本 P.56 / P.58 額頭深橘棕斑紋）
+    [-1, 0, 1].forEach(idx => {
+      const fStripe = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), darkStripeMat);
+      fStripe.scale.set(0.55, 2.2, 0.45);
+      fStripe.position.set(idx * 0.042, 0.115 - Math.abs(idx) * 0.01, 0.142);
+      fStripe.rotation.x = -0.42;
+      fStripe.rotation.z = idx * -0.18;
+      headFace.add(fStripe);
+    });
+
+    // 倒V型開臉：左右澎澎白臉頰（Cheek Puffs）
+    [-1, 1].forEach(side => {
+      const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.108, 16, 14), whiteFur);
+      cheek.scale.set(1.08, 0.82, 0.96);
+      cheek.position.set(side * 0.088, -0.038, 0.078);
+      headFace.add(cheek);
+
+      // 臉頰旁兩道細緻虎斑紋
+      const cheekStripe = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 6), darkStripeMat);
+      cheekStripe.scale.set(1.9, 0.38, 0.5);
+      cheekStripe.position.set(side * 0.165, 0.01, 0.075);
+      cheekStripe.rotation.y = side * 0.45;
+      headFace.add(cheekStripe);
+    });
+
+    // 圓潤白色花生口吻部（ω 嘴鼻底座）與白下巴
+    [-1, 1].forEach(side => {
+      const muzzlePad = new THREE.Mesh(new THREE.SphereGeometry(0.054, 14, 12), whiteFur);
+      muzzlePad.scale.set(1.08, 0.86, 0.95);
+      muzzlePad.position.set(side * 0.036, -0.042, 0.148);
+      headFace.add(muzzlePad);
+    });
+    const chin = new THREE.Mesh(new THREE.SphereGeometry(0.058, 12, 10), whiteFur);
+    chin.scale.set(1.25, 0.68, 0.92);
+    chin.position.set(0, -0.082, 0.125);
+    headFace.add(chin);
+
+    // 珊瑚粉紅小鼻子（倒三角形圓潤鼻頭）
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.024, 0.022, 12), pinkMat);
     nose.rotation.x = Math.PI;
-    nose.position.set(0, -0.015, 0.21);
-    headGroup.add(nose);
+    nose.scale.set(1.2, 0.85, 0.85);
+    nose.position.set(0, -0.016, 0.194);
+    headFace.add(nose);
 
-    // 大眼睛：翡翠綠虹膜 + 黑色瞳孔 + 白色晶瑩高光 (縮小依舊炯炯有神)
-    const eyeIrisMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.1, metalness: 0.2 });
-    const eyePupilMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    // 課本招牌 ω 微笑嘴線（深暖棕立體微笑弧線 + 撒嬌粉紅小舌頭）
+    const mouthMat = new THREE.MeshBasicMaterial({ color: 0x4a2511 });
+    [-1, 1].forEach(side => {
+      const smileArc = new THREE.Mesh(
+        new THREE.TorusGeometry(0.026, 0.0048, 8, 16, Math.PI * 0.85),
+        mouthMat
+      );
+      smileArc.position.set(side * 0.025, -0.038, 0.188);
+      smileArc.rotation.z = Math.PI + side * 0.12;
+      headFace.add(smileArc);
+    });
+    const tongue = new THREE.Mesh(new THREE.SphereGeometry(0.016, 10, 8), pawBeanMat);
+    tongue.scale.set(1.0, 0.75, 0.5);
+    tongue.position.set(0, -0.058, 0.182);
+    headFace.add(tongue);
+    this.catTongue = tongue;
+
+    // 眼神模式 A：課本 P.56 窗台大眼睛（琥珀金虹膜 + 深棕瞳孔 + 雙晶亮高光 + 深棕眼線）
+    this.catOpenEyes = new THREE.Group();
+    const eyeLinerMat = new THREE.MeshBasicMaterial({ color: 0x3b1d0e });
+    const eyeIrisMat = new THREE.MeshStandardMaterial({ color: 0xd99238, roughness: 0.16, metalness: 0.12 });
+    const eyePupilMat = new THREE.MeshBasicMaterial({ color: 0x211109 });
     const eyeHighlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
     [-1, 1].forEach(side => {
-      const iris = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), eyeIrisMat);
-      iris.position.set(side * 0.075, 0.045, 0.145);
+      const liner = new THREE.Mesh(new THREE.SphereGeometry(0.048, 14, 12), eyeLinerMat);
+      liner.scale.set(1.05, 1.02, 0.62);
+      liner.position.set(side * 0.076, 0.032, 0.142);
 
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.025, 8, 8), eyePupilMat);
-      pupil.position.set(side * 0.075, 0.045, 0.17);
+      const iris = new THREE.Mesh(new THREE.SphereGeometry(0.044, 16, 14), eyeIrisMat);
+      iris.scale.set(1.0, 1.0, 0.72);
+      iris.position.set(side * 0.076, 0.030, 0.150);
 
-      const highlight = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 8), eyeHighlightMat);
-      highlight.position.set(side * 0.075 + 0.015, 0.055, 0.185);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.026, 12, 10), eyePupilMat);
+      pupil.scale.set(0.82, 1.05, 0.65);
+      pupil.position.set(side * 0.076, 0.030, 0.172);
 
-      headGroup.add(iris, pupil, highlight);
+      const highlightBig = new THREE.Mesh(new THREE.SphereGeometry(0.011, 8, 8), eyeHighlightMat);
+      highlightBig.position.set(side * 0.076 + 0.014, 0.044, 0.186);
+
+      const highlightSmall = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 6, 6), eyeHighlightMat);
+      highlightSmall.position.set(side * 0.076 - 0.012, 0.018, 0.185);
+
+      this.catOpenEyes.add(liner, iris, pupil, highlightBig, highlightSmall);
     });
+    headFace.add(this.catOpenEyes);
 
-    // 左右白鬍鬚 (左右各三根，粗細合度)
-    const whiskerMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+    // 眼神模式 B：課本 P.58 沙發翻肚彎彎笑眼（⌒ ⌒ 幸福瞇眼 + 粉嫩腮紅）
+    this.catHappyEyes = new THREE.Group();
+    const blushMat = new THREE.MeshBasicMaterial({ color: 0xf9a8b8, transparent: true, opacity: 0.48 });
+    [-1, 1].forEach(side => {
+      const happyArc = new THREE.Mesh(
+        new THREE.TorusGeometry(0.038, 0.0072, 10, 20, Math.PI * 0.82),
+        eyeLinerMat
+      );
+      happyArc.position.set(side * 0.078, 0.022, 0.162);
+      happyArc.rotation.z = Math.PI * 0.09 - side * 0.08;
+      happyArc.rotation.x = -0.18;
+
+      // 眼尾小睫毛翹弧
+      const lash = new THREE.Mesh(new THREE.ConeGeometry(0.006, 0.018, 6), eyeLinerMat);
+      lash.position.set(side * 0.112, 0.028, 0.155);
+      lash.rotation.z = -side * 1.15;
+
+      // 幸福粉紅腮紅
+      const blush = new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 8), blushMat);
+      blush.scale.set(1.35, 0.75, 0.35);
+      blush.position.set(side * 0.105, -0.012, 0.156);
+
+      this.catHappyEyes.add(happyArc, lash, blush);
+    });
+    this.catHappyEyes.visible = false;
+    headFace.add(this.catHappyEyes);
+
+    // 臉頰深棕鬍鬚（左右各3根）＋ 眼睛上方白色眉鬚（左右各2根，還原課本插圖細節）
+    const darkWhiskerMat = new THREE.LineBasicMaterial({ color: 0x432312, linewidth: 2 });
+    const whiteBrowMat = new THREE.LineBasicMaterial({ color: 0xfffdf9, linewidth: 2 });
     [-1, 1].forEach(side => {
       for (let w = -1; w <= 1; w++) {
-        const points = [
-          new THREE.Vector3(side * 0.07, -0.03 + w * 0.015, 0.15),
-          new THREE.Vector3(side * 0.21, -0.03 + w * 0.03, 0.17)
+        const pts = [
+          new THREE.Vector3(side * 0.085, -0.032 + w * 0.014, 0.145),
+          new THREE.Vector3(side * 0.165, -0.028 + w * 0.022, 0.148),
+          new THREE.Vector3(side * 0.245, -0.036 + w * 0.034, 0.135)
         ];
-        headGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), whiskerMat));
+        const curve = new THREE.QuadraticBezierCurve3(pts[0], pts[1], pts[2]);
+        headFace.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(curve.getPoints(8)), darkWhiskerMat));
+      }
+      // 白色長眉鬚
+      for (let b = 0; b < 2; b++) {
+        const bPts = [
+          new THREE.Vector3(side * (0.055 + b * 0.018), 0.078, 0.135),
+          new THREE.Vector3(side * (0.105 + b * 0.025), 0.135 + b * 0.015, 0.125),
+          new THREE.Vector3(side * (0.155 + b * 0.03), 0.155 + b * 0.018, 0.10)
+        ];
+        const bCurve = new THREE.QuadraticBezierCurve3(bPts[0], bPts[1], bPts[2]);
+        headFace.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bCurve.getPoints(8)), whiteBrowMat));
       }
     });
 
-    // 貓耳朵 (帶粉紅耳窩)
-    const earGeo = new THREE.ConeGeometry(0.065, 0.11, 4);
-    const earL = new THREE.Mesh(earGeo, orangeFur);
-    earL.position.set(-0.085, 0.17, 0.02);
-    earL.rotation.z = 0.32;
-    const earInnerL = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.08, 4), pinkMat);
-    earInnerL.position.set(-0.085, 0.16, 0.035);
-    earInnerL.rotation.z = 0.32;
+    // 圓潤三角形貓耳朵（橘虎斑外耳 + 蜜桃粉內耳窩 + 耳口白絨毛）
+    const earOuterGeo = new THREE.ConeGeometry(0.072, 0.125, 12);
+    earOuterGeo.scale(1.0, 1.0, 0.58);
+    const earInnerGeo = new THREE.ConeGeometry(0.046, 0.088, 10);
+    earInnerGeo.scale(1.0, 1.0, 0.45);
 
-    const earR = new THREE.Mesh(earGeo, orangeFur);
-    earR.position.set(0.085, 0.17, 0.02);
-    earR.rotation.z = -0.32;
-    const earInnerR = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.08, 4), pinkMat);
-    earInnerR.position.set(0.085, 0.16, 0.035);
-    earInnerR.rotation.z = -0.32;
+    [-1, 1].forEach(side => {
+      const earNode = new THREE.Group();
+      earNode.position.set(side * 0.102, 0.152, 0.015);
+      earNode.rotation.z = -side * 0.36;
+      earNode.rotation.x = 0.12;
 
-    headGroup.add(earL, earInnerL, earR, earInnerR);
+      const earOuter = new THREE.Mesh(earOuterGeo, orangeFur);
+      earOuter.castShadow = true;
+      const earInner = new THREE.Mesh(earInnerGeo, pinkMat);
+      earInner.position.set(0, -0.006, 0.018);
+
+      const earTuft = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 6), whiteFur);
+      earTuft.scale.set(1.3, 0.65, 0.6);
+      earTuft.position.set(-side * 0.01, -0.038, 0.022);
+
+      earNode.add(earOuter, earInner, earTuft);
+      headFace.add(earNode);
+    });
 
     this.catMeshGroup.add(headGroup);
     this.catHead = headGroup;
 
-    // 4. 紅色項圈與金色小鈴鐺 (反光高質感金屬色塊)
-    const collar = new THREE.Mesh(
-      new THREE.TorusGeometry(0.15, 0.018, 8, 20),
-      new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 })
-    );
-    collar.position.set(0.18, 0.06, 0);
-    collar.rotation.y = Math.PI / 2;
-    const bell = new THREE.Mesh(
-      new THREE.SphereGeometry(0.032, 10, 10),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.85, roughness: 0.18 })
-    );
-    bell.position.set(0.18, -0.01, 0.15);
-    this.catMeshGroup.add(collar, bell);
-    this.collar = collar;
-    this.bell = bell;
-
-    // 5. 四隻純白襪子短腿（腿柱高度 0.16，足底嚴格恰在 y = 0，不穿地）
+    // 4. 四隻橘虎斑大腿＋純白襪子＋立體粉紅肉球（1掌墊＋4趾墊）
+    // 索引：0 = 右前腳, 1 = 左前腳, 2 = 右後腳, 3 = 左後腳
     this.catLegs = [];
-    const legPositions = [
-      [0.18, 0.15],
-      [0.18, -0.15],
-      [-0.18, 0.15],
-      [-0.18, -0.15]
+    this.catPaws = [];
+    const legSpecs = [
+      { x: 0.17, z: 0.125, isFront: true },
+      { x: 0.17, z: -0.125, isFront: true },
+      { x: -0.17, z: 0.13, isFront: false },
+      { x: -0.17, z: -0.13, isFront: false }
     ];
-    legPositions.forEach(([x, z]) => {
-      const legGroup = new THREE.Group();
-      legGroup.position.set(x, -0.04, z); // 旋轉關節軸心 (高度對齊 y = 0.16)
 
-      const legMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.045, 0.04, 0.16, 10),
+    legSpecs.forEach(({ x, z, isFront }) => {
+      const legGroup = new THREE.Group();
+      legGroup.position.set(x, -0.04, z); // 關節軸心高度 y = 0.16
+
+      // 上半截橘虎斑腿
+      const upperLeg = new THREE.Mesh(
+        new THREE.CylinderGeometry(isFront ? 0.048 : 0.054, 0.044, 0.085, 14),
+        orangeFur
+      );
+      upperLeg.position.y = -0.042;
+      upperLeg.castShadow = true;
+      legGroup.add(upperLeg);
+
+      // 下半截純白襪子小腿
+      const whiteSock = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.044, 0.042, 0.075, 14),
         whiteFur
       );
-      legMesh.position.y = -0.08; // 圓柱中心偏移，底端在 0.20 - 0.04 - 0.16 = 0
-      legMesh.castShadow = true;
-      legGroup.add(legMesh);
+      whiteSock.position.y = -0.112;
+      whiteSock.castShadow = true;
+      legGroup.add(whiteSock);
+
+      // 圓滾滾純白山竹貓爪群組（含腳底與前側立體粉紅肉球）
+      const pawGroup = new THREE.Group();
+      pawGroup.position.set(0.008, -0.145, 0);
+
+      const pawBall = new THREE.Mesh(new THREE.SphereGeometry(0.048, 14, 12), whiteFur);
+      pawBall.scale.set(1.18, 0.68, 1.06);
+      pawGroup.add(pawBall);
+
+      // 立體粉紅肉球群組（預設朝向腳掌底面 -Y，當翻肚或抬爪時清晰展現 1 掌墊 + 4 趾墊）
+      const beansGroup = new THREE.Group();
+      beansGroup.position.set(0.004, -0.026, 0);
+
+      // 中央愛心/橢圓大掌墊
+      const mainPad = new THREE.Mesh(new THREE.SphereGeometry(0.021, 12, 10), pawBeanMat);
+      mainPad.scale.set(1.05, 0.48, 1.22);
+      mainPad.position.set(-0.006, 0, 0);
+      beansGroup.add(mainPad);
+
+      // 前排四顆粉嫩小趾墊（扇形排列）
+      const toeAngles = [-0.52, -0.17, 0.17, 0.52];
+      toeAngles.forEach(ang => {
+        const toeBean = new THREE.Mesh(new THREE.SphereGeometry(0.0105, 10, 8), pawBeanMat);
+        toeBean.scale.set(1.15, 0.52, 0.92);
+        toeBean.position.set(
+          0.020 * Math.cos(ang),
+          0.001,
+          0.026 * Math.sin(ang)
+        );
+        beansGroup.add(toeBean);
+      });
+
+      pawGroup.add(beansGroup);
+      legGroup.add(pawGroup);
+      legGroup.userData = { pawGroup, beansGroup, isFront };
 
       this.catMeshGroup.add(legGroup);
       this.catLegs.push(legGroup);
+      this.catPaws.push(pawGroup);
     });
 
-    // 6. 橘色彎尾巴 (帶白尾尖)
+    // 5. 課本插圖虎斑環紋長尾巴（分段自然弧度）
     this.catTail = new THREE.Group();
-    const tailBase = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.032, 0.024, 0.24, 8),
-      orangeFur
+    const tailSeg1 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.034, 0.038, 0.16, 12),
+      tailMat
     );
-    tailBase.position.y = 0.12;
+    tailSeg1.position.y = 0.08;
+    const tailSeg2 = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.030, 0.034, 0.15, 12),
+      tailMat
+    );
+    tailSeg2.position.set(-0.02, 0.21, 0);
+    tailSeg2.rotation.z = 0.28;
     const tailTip = new THREE.Mesh(
-      new THREE.SphereGeometry(0.028, 8, 8),
-      whiteFur
+      new THREE.SphereGeometry(0.031, 12, 10),
+      darkStripeMat
     );
-    tailTip.position.y = 0.24;
-    this.catTail.add(tailBase, tailTip);
-    this.catTail.position.set(-0.28, 0.04, 0);
-    this.catTail.rotation.z = 0.8;
+    tailTip.position.set(-0.042, 0.285, 0);
+
+    this.catTail.add(tailSeg1, tailSeg2, tailTip);
+    this.catTail.position.set(-0.27, 0.03, 0);
+    this.catTail.rotation.z = 0.78;
     this.catMeshGroup.add(this.catTail);
 
+    this.windowPawFactor = 0.0;
     this.cat.position.copy(this.catPos);
     this.scene.add(this.cat);
   }
@@ -2095,9 +2406,10 @@ class GameEngine {
     if (this._lastJumpTime && now - this._lastJumpTime < 650) return;
     this._lastJumpTime = now;
 
-    if (this.catState === 'sleep_belly_up') {
+    if (this.catState === 'sleep_belly_up' || this.catState === 'window_paw') {
       this.catState = 'walk';
       this.bellyUpFactor = 0;
+      this.windowPawFactor = 0;
       if (window.soundSystem) window.soundSystem.stopPurr();
     }
 
@@ -2174,6 +2486,13 @@ class GameEngine {
       this.cat.position.copy(this.catPos);
       this.cat.rotation.set(0, Math.PI / 2, 0); // 面朝北方
       this.bellyUpFactor = 1.0;
+      this.windowPawFactor = 0.0;
+    } else if (state === 'window_paw') {
+      this.catPos.set(3.55, 0.85, -3.55); // 置於落地窗木質窗台上 (高度 0.85)
+      this.cat.position.copy(this.catPos);
+      this.cat.rotation.set(0, -Math.PI * 0.45, 0); // 面向窗外蝴蝶與晴空
+      this.windowPawFactor = 1.0;
+      this.bellyUpFactor = 0.0;
     } else if (state === 'walk_to_player') {
       this.catTarget = this.player.position.clone();
       this.catIsHappy = happy;
@@ -2440,6 +2759,16 @@ class GameEngine {
         tag: '課本第 10 種貓叫聲・雀躍鳥鳴',
         desc: '陽光灑落的明亮落地窗，窗外樹梢有小鳥啼鳴與飛舞的蝴蝶。小女生看到窗外動態時，牙齒會發出快速雀躍打顫的碎鳴（Chatter 叫聲）！',
         actions: [
+          {
+            icon: '🦋',
+            label: '坐窗台抬爪看蝴蝶（課本P.56）',
+            badge: '課本名場面',
+            run: () => {
+              this.setCatAIState('window_paw');
+              if (window.soundSystem) window.soundSystem.playRealMeow('chatter');
+              this.showPrompt('🦋 小女生端坐在窗台上，舉起前爪仰望窗外蝴蝶！（課本P.56名場面）✨');
+            }
+          },
           {
             icon: '🐦',
             label: '看窗外小鳥牙齒打顫',
@@ -2960,56 +3289,136 @@ class GameEngine {
   updateCatPose(delta, time) {
     if (!this.catMeshGroup) return;
 
-    const targetFactor = (this.catState === 'sleep_belly_up') ? 1.0 : 0.0;
-    // 平滑插值過渡翻肚動作
-    this.bellyUpFactor += (targetFactor - this.bellyUpFactor) * Math.min(1.0, delta * 9);
+    const targetBelly = (this.catState === 'sleep_belly_up') ? 1.0 : 0.0;
+    const targetWindow = (this.catState === 'window_paw') ? 1.0 : 0.0;
+
+    // 平滑插值過渡動作
+    this.bellyUpFactor = (this.bellyUpFactor || 0) + (targetBelly - (this.bellyUpFactor || 0)) * Math.min(1.0, delta * 9);
+    this.windowPawFactor = (this.windowPawFactor || 0) + (targetWindow - (this.windowPawFactor || 0)) * Math.min(1.0, delta * 8);
 
     const f = this.bellyUpFactor;
+    const wp = this.windowPawFactor;
 
-    // 1. 翻肚姿勢：以 X 軸（脊椎長軸）翻轉 180 度，微幅 Z 軸歪頭萌態
-    this.catMeshGroup.rotation.x = Math.PI * f;
-    this.catMeshGroup.rotation.z = 0.08 * f;
+    // 眼睛與表情切換：翻肚睡覺或摸摸時顯示幸福彎彎笑眼 (⌒ ⌒)，其餘狀態為琥珀金大眼睛
+    const isHappySquint = (f > 0.35 || this.isPetting);
+    if (this.catHappyEyes && this.catOpenEyes) {
+      this.catHappyEyes.visible = isHappySquint;
+      this.catOpenEyes.visible = !isHappySquint;
+    }
+    if (this.catTongue) {
+      this.catTongue.visible = isHappySquint;
+    }
 
-    // 2. 翻肚高度微調：
-    // 站立時中心 y = 0.20，四爪觸底 y = 0；
-    // 翻肚時背部觸底 y = 0，腹部朝天 y = 0.26，四爪朝天 y = 0.38
-    this.catMeshGroup.position.y = 0.20 * (1 - f) + 0.17 * f;
+    if (f > 0.02) {
+      // 1. 課本 P.58 沙發翻肚名場面（四腳朝天、毛茸茸大白肚蓋著、歪頭瞇眼微笑、粉紅肉球朝天）
+      this.catMeshGroup.rotation.x = Math.PI * f;
+      this.catMeshGroup.rotation.z = 0.08 * f;
+      this.catMeshGroup.position.y = 0.20 * (1 - f) + 0.17 * f;
 
-    // 3. 翻肚時四腳朝天爪部姿勢與白肚子呼吸起伏
-    if (f > 0.05) {
-      const legWave = Math.sin(time * 3) * 0.06;
-      if (this.catLegs && this.catLegs.length === 4) {
-        // 前爪微捲收在胸前朝天
-        this.catLegs[0].rotation.x = -0.35 * f + legWave;
-        this.catLegs[1].rotation.x = -0.35 * f - legWave;
-        this.catLegs[0].rotation.z = 0.25 * f;
-        this.catLegs[1].rotation.z = -0.25 * f;
-
-        // 後爪放鬆微張
-        this.catLegs[2].rotation.z = 0.35 * f;
-        this.catLegs[3].rotation.z = -0.35 * f;
-      }
-
-      // 白肚子呼吸起伏（課本第三段：毛茸茸的肚子，看起來像蓋上了一條白色小被子）
-      const breathe = Math.sin(time * 3.5) * 0.04;
-      if (this.catBelly) {
-        this.catBelly.scale.set(1.0 + breathe, 0.88 + breathe, 0.94);
-      }
-
-      // 尾巴在座墊/地面慵懶搖擺
-      if (this.catTail) {
-        this.catTail.rotation.x = Math.sin(time * 2.5) * 0.25;
-        this.catTail.rotation.z = 0.8 * (1 - f) + 0.3 * f;
-      }
-
-      // 貓頭微放鬆後仰
+      // 貓頭自然正仰微歪（抵消軀幹翻轉，使臉部、耳朵與笑眼正向朝上迎向鏡頭）
       if (this.catHead) {
-        this.catHead.rotation.x = -0.08 * f;
-        this.catHead.rotation.z = Math.sin(time * 1.5) * 0.05 * f;
+        this.catHead.rotation.x = (-Math.PI + 0.35) * f;
+        this.catHead.rotation.y = -0.55 * f;
+        this.catHead.rotation.z = -0.15 * f + Math.sin(time * 1.5) * 0.04 * f;
+        this.catHead.position.y = 0.13 * (1 - f) - 0.03 * f;
+      }
+
+      // 四足朝天姿勢：前爪胸前萌曲、後足圓胖微張，粉紅肉球清晰外露
+      if (this.catLegs && this.catLegs.length === 4) {
+        const legWave = Math.sin(time * 3) * 0.04;
+        // 右前腳：微捲收在胸口前朝天
+        this.catLegs[0].rotation.x = -0.52 * f + legWave;
+        this.catLegs[0].rotation.z = 0.28 * f;
+        if (this.catLegs[0].userData && this.catLegs[0].userData.pawGroup) {
+          this.catLegs[0].userData.pawGroup.rotation.x = 0.65 * f;
+        }
+
+        // 左前腳：高舉在臉頰耳朵旁朝天（露出粉紅掌墊＋4趾墊）
+        this.catLegs[1].rotation.x = -0.82 * f - legWave;
+        this.catLegs[1].rotation.z = -0.38 * f;
+        if (this.catLegs[1].userData && this.catLegs[1].userData.pawGroup) {
+          this.catLegs[1].userData.pawGroup.rotation.x = 0.85 * f;
+        }
+
+        // 圓胖後腿：八字放鬆微張
+        this.catLegs[2].rotation.x = 0.32 * f;
+        this.catLegs[2].rotation.z = 0.48 * f;
+        this.catLegs[3].rotation.x = 0.32 * f;
+        this.catLegs[3].rotation.z = -0.48 * f;
+      }
+
+      // 白肚子起伏呼吸（白色小被子）
+      const breathe = Math.sin(time * 3.5) * 0.045 * f;
+      if (this.catBelly) {
+        this.catBelly.scale.set(1.0 + breathe, 0.95 + breathe, 1.0 + breathe);
+      }
+
+      // 尾巴在沙發座墊上慵懶擺動
+      if (this.catTail) {
+        this.catTail.rotation.x = Math.sin(time * 2.2) * 0.35 * f;
+        this.catTail.rotation.z = 0.78 * (1 - f) + 0.28 * f;
+      }
+    } else if (wp > 0.02) {
+      // 2. 課本 P.56 窗台名場面（端坐窗台、昂頭仰望蝴蝶、高高舉起一隻白襪子前爪、露出粉紅肉球、尾巴垂下窗台）
+      this.catMeshGroup.rotation.x = 0;
+      this.catMeshGroup.rotation.z = 0.42 * wp;
+      this.catMeshGroup.position.y = 0.20 * (1 - wp) + 0.16 * wp;
+
+      // 貓頭抬起仰望天空與蝴蝶
+      if (this.catHead) {
+        this.catHead.rotation.x = 0;
+        this.catHead.rotation.z = 0.40 * wp + Math.sin(time * 2.2) * 0.03 * wp;
+        this.catHead.rotation.y = -0.12 * wp;
+        this.catHead.position.y = 0.13;
+      }
+
+      if (this.catLegs && this.catLegs.length === 4) {
+        // 右前腳支撐在窗台上
+        this.catLegs[0].rotation.x = 0;
+        this.catLegs[0].rotation.z = -0.42 * wp;
+
+        // 左前腳高高舉起在空中（課本招牌抬爪手勢）
+        this.catLegs[1].rotation.x = 0.22 * wp;
+        this.catLegs[1].rotation.z = 1.08 * wp + Math.sin(time * 2.8) * 0.06 * wp;
+        if (this.catLegs[1].userData && this.catLegs[1].userData.pawGroup) {
+          this.catLegs[1].userData.pawGroup.rotation.x = -0.65 * wp;
+        }
+
+        // 後腿折疊坐於窗台
+        this.catLegs[2].rotation.x = 0;
+        this.catLegs[2].rotation.z = -0.56 * wp;
+        this.catLegs[3].rotation.x = 0;
+        this.catLegs[3].rotation.z = -0.56 * wp;
+      }
+
+      // 尾巴自然垂掛在窗台邊緣
+      if (this.catTail) {
+        this.catTail.rotation.x = Math.sin(time * 2) * 0.16 * wp;
+        this.catTail.rotation.z = 0.78 * (1 - wp) + 1.88 * wp;
+      }
+    } else {
+      // 站立或行走標準復位
+      this.catMeshGroup.rotation.x = 0;
+      this.catMeshGroup.rotation.z = 0;
+      this.catMeshGroup.position.y = 0.20;
+
+      if (this.catHead) {
+        this.catHead.rotation.set(0, 0, 0);
+        this.catHead.position.y = 0.13;
+      }
+      if (this.catBelly) {
+        this.catBelly.scale.set(1, 1, 1);
+      }
+      if (this.catLegs) {
+        this.catLegs.forEach(l => {
+          if (l.userData && l.userData.pawGroup) {
+            l.userData.pawGroup.rotation.set(0, 0, 0);
+          }
+        });
       }
     }
 
-    // 呼嚕音效聯動防護：非翻肚且非摸頭撫摸狀態下，保證呼嚕聲必然自動停止
+    // 呼嚕音效聯動防護：非翻肚且非撫摸狀態下，保證呼嚕聲必然自動停止
     if (this.catState !== 'sleep_belly_up' && !this.isPetting) {
       if (window.soundSystem && window.soundSystem.isPurring) {
         window.soundSystem.stopPurr();
@@ -3041,7 +3450,7 @@ class GameEngine {
     this.isCatMoving = isMoving;
 
     if (isMoving) {
-      if (this.catState === 'sleep_belly_up') {
+      if (this.catState === 'sleep_belly_up' || this.catState === 'window_paw') {
         this.catState = 'walk';
         if (window.soundSystem) window.soundSystem.stopPurr();
       }
@@ -3229,7 +3638,7 @@ class GameEngine {
   updateAICat(delta, time) {
     if (!this.cat) return;
 
-    if (this.catState === 'sleep_belly_up') {
+    if (this.catState === 'sleep_belly_up' || this.catState === 'window_paw') {
       const groundH = this.getSurfaceHeight(this.cat.position.x, this.cat.position.z);
       this.cat.position.y = groundH;
       return;
